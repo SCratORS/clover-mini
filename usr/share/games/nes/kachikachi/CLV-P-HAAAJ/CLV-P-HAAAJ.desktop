@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=Super Mario Bros.
+Exec=usr/share/games/nes/kachikachi/CLV-P-HAAAJ/CLV-P-HAAAJ.nes
+Icon=usr/share/games/nes/kachikachi/CLV-P-HAAAJ/CLV-P-HAAAJ.bmp
+
+[X-CLOVER Game]
+Players=2
+Simultaneous=0
+ReleaseDate=1985-09-13
+SaveCount=0
+SortRawTitle=super mario bros.
+SortRawPublisher=NINTENDO
+Copyright=Super Mario Bros. ©1985 Nintendo
