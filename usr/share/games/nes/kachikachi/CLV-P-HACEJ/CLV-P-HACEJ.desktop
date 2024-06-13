@@ -1,0 +1,12 @@
+[Desktop Entry]
+Exec=usr/share/games/nes/kachikachi/CLV-P-HACEJ/CLV-P-HACEJ.nes
+Name=Tsuppari Oozumou
+Icon=usr/share/games/nes/kachikachi/CLV-P-HACEJ/CLV-P-HACEJ.bmp
+
+[X-CLOVER Game]
+Players=2
+Simultaneous=1
+ReleaseDate=1987-09-18
+SortRawTitle=tsuppari oozumou
+SortRawPublisher=KOEI TECMO
+Copyright=Tsuppari Oozumou ©1987 KOEI TECMO GAMES Co., Ltd. All rights reserved.

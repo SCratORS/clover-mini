@@ -1,0 +1,12 @@
+[Desktop Entry]
+Exec=usr/share/games/nes/kachikachi/CLV-P-HABVJ/CLV-P-HABVJ.nes
+Name=Super C
+Icon=usr/share/games/nes/kachikachi/CLV-P-HABVJ/CLV-P-HABVJ.bmp
+
+[X-CLOVER Game]
+Players=2
+Simultaneous=1
+ReleaseDate=1990-02-02
+SortRawTitle=super c
+SortRawPublisher=KONAMI
+Copyright=Super C ©1990 Konami Digital Entertainment

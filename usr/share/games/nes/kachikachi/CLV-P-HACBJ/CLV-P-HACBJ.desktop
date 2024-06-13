@@ -1,0 +1,12 @@
+[Desktop Entry]
+Exec=usr/share/games/nes/kachikachi/CLV-P-HACBJ/CLV-P-HACBJ.nes
+Name=NINJA GAIDEN
+Icon=usr/share/games/nes/kachikachi/CLV-P-HACBJ/CLV-P-HACBJ.bmp
+
+[X-CLOVER Game]
+Players=1
+Simultaneous=0
+ReleaseDate=1988-12-09
+SortRawTitle=ninja gaiden
+SortRawPublisher=KOEI TECMO
+Copyright=NINJA GAIDEN ©1988 KOEI TECMO GAMES Co., Ltd. All rights reserved.

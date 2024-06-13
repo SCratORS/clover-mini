@@ -1,0 +1,12 @@
+[Desktop Entry]
+Exec=usr/share/games/nes/kachikachi/CLV-P-HABMJ/CLV-P-HABMJ.nes
+Name=PAC-MAN
+Icon=usr/share/games/nes/kachikachi/CLV-P-HABMJ/CLV-P-HABMJ.bmp
+
+[X-CLOVER Game]
+Players=2
+Simultaneous=0
+ReleaseDate=1984-11-02
+SortRawTitle=pac-man
+SortRawPublisher=BANDAI NAMCO
+Copyright=PAC-MAN™ & ©1980 BANDAI NAMCO Entertainment Inc.

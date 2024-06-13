@@ -1,0 +1,12 @@
+[Desktop Entry]
+Exec=usr/share/games/nes/kachikachi/CLV-P-HABQJ/CLV-P-HABQJ.nes
+Name=Castlevania
+Icon=usr/share/games/nes/kachikachi/CLV-P-HABQJ/CLV-P-HABQJ.bmp
+
+[X-CLOVER Game]
+Players=1
+Simultaneous=0
+ReleaseDate=1986-09-26
+SortRawTitle=castlevania
+SortRawPublisher=KONAMI
+Copyright=Castlevania ©1986 Konami Digital Entertainment

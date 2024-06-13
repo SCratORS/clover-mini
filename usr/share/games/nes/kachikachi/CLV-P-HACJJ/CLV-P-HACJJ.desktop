@@ -1,0 +1,12 @@
+[Desktop Entry]
+Exec=usr/share/games/nes/kachikachi/CLV-P-HACJJ/CLV-P-HACJJ.nes
+Name=Downtown - Nekketsu Monogatari
+Icon=usr/share/games/nes/kachikachi/CLV-P-HACJJ/CLV-P-HACJJ.bmp
+
+[X-CLOVER Game]
+Players=2
+Simultaneous=1
+ReleaseDate=1989-04-25
+SortRawTitle=downtown - nekketsu monogatari
+SortRawPublisher=AMERICAN TECHNOS, INC.
+Copyright=Downtown - Nekketsu Monogatari © ARC SYSTEM WORKS

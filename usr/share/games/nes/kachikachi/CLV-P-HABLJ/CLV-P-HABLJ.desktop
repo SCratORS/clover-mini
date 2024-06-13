@@ -1,0 +1,12 @@
+[Desktop Entry]
+Exec=usr/share/games/nes/kachikachi/CLV-P-HABLJ/CLV-P-HABLJ.nes
+Name=FINAL FANTASY-III
+Icon=usr/share/games/nes/kachikachi/CLV-P-HABLJ/CLV-P-HABLJ.bmp
+
+[X-CLOVER Game]
+Players=1
+Simultaneous=0
+ReleaseDate=1990-04-27
+SortRawTitle=final fantasy-iii
+SortRawPublisher=SQUARE ENIX
+Copyright=FINAL FANTASY-III ©1990 SQUARE ENIX CO., LTD. All Rights Reserved.
