@@ -1,0 +1,13 @@
+[Desktop Entry]
+Exec=usr/share/games/nes/kachikachi/CLV-P-HAANJ/CLV-P-HAANJ.nes
+Name=The Legend of Zelda
+Icon=usr/share/games/nes/kachikachi/CLV-P-HAANJ/CLV-P-HAANJ.bmp
+
+[X-CLOVER Game]
+Players=1
+Simultaneous=0
+ReleaseDate=1986-02-21
+SaveCount=3
+SortRawTitle=the legend of zelda
+SortRawPublisher=NINTENDO
+Copyright=The Legend of Zelda ©1986 Nintendo

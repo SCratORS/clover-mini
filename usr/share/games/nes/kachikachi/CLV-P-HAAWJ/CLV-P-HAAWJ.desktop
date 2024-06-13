@@ -1,0 +1,12 @@
+[Desktop Entry]
+Exec=usr/share/games/nes/kachikachi/CLV-P-HAAWJ/CLV-P-HAAWJ.nes
+Name=Mario Bros.
+Icon=usr/share/games/nes/kachikachi/CLV-P-HAAWJ/CLV-P-HAAWJ.bmp
+
+[X-CLOVER Game]
+Players=2
+Simultaneous=1
+ReleaseDate=1983-07-14
+SortRawTitle=mario bros.
+SortRawPublisher=NINTENDO
+Copyright=Mario Bros. ©1983 Nintendo
