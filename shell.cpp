@@ -237,7 +237,7 @@ void Shell::drawCourusel(uint8_t y, uint8_t counter) {
 			tblAttribute[bn+h*TBL_WIDTH] = courusel[i]->select?0x05:0x0D;
 		}
 	}
-	* courusel[sel]->pSelect = true;
+	if (courusel[sel]) * courusel[sel]->pSelect = true;
 }
 
 int16_t current_pos_x = -100;
@@ -466,6 +466,14 @@ void Shell::drawSavesPanel() {
 }
 
 void Shell::drawSaveState(uint8_t ndx, uint8_t xt, uint8_t yt) {
+	uint8_t pallete_1 = 0x1C;
+	uint8_t pallete_2 = 0x1D;
+
+	if (!temp_save_state && stable_position_syspend_panel_selector==6 + 8*(ndx-1)) {
+		pallete_1 = 0x1E;
+		pallete_2 = 0x1F;
+	}
+
 	uint16_t tbl_sv_st_16[4][2] = {
 		{0x4342, 0x5352},
 		{0x4544, 0x5554},
@@ -478,10 +486,10 @@ void Shell::drawSaveState(uint8_t ndx, uint8_t xt, uint8_t yt) {
 	memset(&tblAttribute[(yt+1)*TBL_WIDTH + xt], 0x0F, 2);
 	for(uint8_t i=1; i<4; i++) {
 		memset(&tblName     [(yt+i)*TBL_WIDTH + xt + 3], 0x20, 4);
-		memset(&tblAttribute[(yt+i)*TBL_WIDTH + xt + 3], (courusel[sel]->savePointList[ndx-1]?0x1C:0x0A), 4);
+		memset(&tblAttribute[(yt+i)*TBL_WIDTH + xt + 3], (courusel[sel]->savePointList[ndx-1]?pallete_1:0x0A), 4);
 	}
-	memset(&tblAttribute[(yt+4)*TBL_WIDTH + xt + 3], (courusel[sel]->savePointList[ndx-1]?0x1D:0x12), 4);
-	memset(&tblAttribute[ yt   *TBL_WIDTH + xt + 4], (courusel[sel]->savePointList[ndx-1]?0x1D:0x13), 2);
+	memset(&tblAttribute[(yt+4)*TBL_WIDTH + xt + 3], (courusel[sel]->savePointList[ndx-1]?pallete_2:0x12), 4);
+	memset(&tblAttribute[ yt   *TBL_WIDTH + xt + 4], (courusel[sel]->savePointList[ndx-1]?pallete_2:0x13), 2);
 	memset(&tblName		[ yt   *TBL_WIDTH + xt + 3], 0x5E, 4);
 	memcpy(&tblName[(yt+2)*TBL_WIDTH + xt+4], "NO", 2);
 	memset(&tblAttribute[(yt+2)*TBL_WIDTH + xt+4], 0x32, 2);
@@ -499,18 +507,18 @@ void Shell::drawSaveState(uint8_t ndx, uint8_t xt, uint8_t yt) {
 	tblName[(yt+4)*TBL_WIDTH + xt+5] = 0x9B;
 	tblName[(yt+4)*TBL_WIDTH + xt+6] = 0x9C;
 	tblName[(yt+4)*TBL_WIDTH + xt+7] = 0x7F;
-	tblAttribute[ yt   *TBL_WIDTH + xt+3] = (courusel[sel]->savePointList[ndx-1]?0x1D:0x0E) | 0x80;	
-	tblAttribute[ yt   *TBL_WIDTH + xt+6] = (courusel[sel]->savePointList[ndx-1]?0x1C:0x12);
+	tblAttribute[ yt   *TBL_WIDTH + xt+3] = (courusel[sel]->savePointList[ndx-1]?pallete_2:0x0E) | 0x80;	
+	tblAttribute[ yt   *TBL_WIDTH + xt+6] = (courusel[sel]->savePointList[ndx-1]?pallete_1:0x12);
 	tblAttribute[ yt   *TBL_WIDTH + xt+2] = 
 	tblAttribute[(yt+1)*TBL_WIDTH + xt+2] = 
 	tblAttribute[(yt+2)*TBL_WIDTH + xt+2] = 
-	tblAttribute[(yt+3)*TBL_WIDTH + xt+2] = (courusel[sel]->savePointList[ndx-1]?0x1C:0x06) | 0x80;
+	tblAttribute[(yt+3)*TBL_WIDTH + xt+2] = (courusel[sel]->savePointList[ndx-1]?pallete_1:0x06) | 0x80;
 	tblAttribute[(yt+4)*TBL_WIDTH + xt+2] =
 	tblAttribute[ yt   *TBL_WIDTH + xt+7] = 
 	tblAttribute[(yt+1)*TBL_WIDTH + xt+7] = 	
 	tblAttribute[(yt+2)*TBL_WIDTH + xt+7] = 
 	tblAttribute[(yt+3)*TBL_WIDTH + xt+7] = 
-	tblAttribute[(yt+4)*TBL_WIDTH + xt+7] = (courusel[sel]->savePointList[ndx-1]?0x1C:0x16);
+	tblAttribute[(yt+4)*TBL_WIDTH + xt+7] = (courusel[sel]->savePointList[ndx-1]?pallete_1:0x16);
 
 	if (courusel[sel]->savePointList[ndx-1]) {
 		int16_t x = (xt+2) * 8;
@@ -786,6 +794,7 @@ void Shell::drawSelector(selectors mode) {
 					drawSprite(0x48, temp_save_state_x + (w<<3) - 7, temp_save_state_y + (c<<3) - 4,	0x95);
 				}
 			} else {
+				if (no_select_state) break;
 				y = 20; h = 4; w = 6;
 				drawSprite(0x4A, (stable_position_syspend_panel_selector<<3)-1, 		(y<<3)-3,		0x95);
 				drawSprite(0x4A, (stable_position_syspend_panel_selector<<3)-1,		((y+h)<<3)+3,	0xD5);
@@ -1019,7 +1028,7 @@ printf("DEBUG: %s.\n", "Update controller action");
 							}
 						} else {
 							if (select_save_state > 0)
-							for (uint8_t i = select_save_state-1; i >= 0; i--) {
+							for (int8_t i = select_save_state-1; i >= 0; i--) {
 								if (courusel[sel]->savePointList[i]) {
 									select_to_syspend_panel_selector = 6 + 8*i;
 									select_save_state = i;
@@ -1032,6 +1041,24 @@ printf("DEBUG: %s.\n", "Update controller action");
 				break;
 			}
 		}
+
+		if (controller&0x20&& !(lastkbState&0x20)) {
+			switch (currentSelect) {
+				case saves:
+					if (!temp_save_state) {
+						if (courusel[sel]->savePointList[select_save_state]) {
+							x_offset_save_state = x_offset;
+							stable_position_save_state = stable_position;
+							temp_save_state = courusel[sel]->savePointList[select_save_state];
+							courusel[sel]->savePointList[select_save_state] = nullptr;
+							PlayWav(se_sys_cursor);
+						}
+					}
+				break;
+			}
+		}
+
+
 		if (controller&0x10&& !(lastkbState&0x10)) {
 			switch (currentSelect) {
 				case gamelist:
@@ -1097,6 +1124,7 @@ printf("DEBUG: %s.\n", "Update controller action");
 						stable_position_syspend_panel_selector = 6 + 8 * select_save_state;
 						select_to_syspend_panel_selector = stable_position_syspend_panel_selector;
 						temp_save_state = nullptr;
+						no_select_state = false;
 						PlayWav(se_sys_click);
 					}
 				break;
@@ -1110,7 +1138,23 @@ printf("DEBUG: %s.\n", "Update controller action");
 		}
 		if (controller&0x04 && !(lastkbState&0x04)) {
 			if (currentSelect == menu) currentSelect = currentSelect = courusel.size()==0?empty:gamelist;
-			else if (currentSelect == gamelist) currentSelect = saves;
+			else if (currentSelect == gamelist) {
+				if (courusel[sel]) {
+					currentSelect = saves;
+					if (!courusel[sel]->savePointList[select_save_state]){
+						no_select_state = true;
+						for (uint8_t i = 0; i < 4; i++) {
+							if (courusel[sel]->savePointList[i]) {
+								select_to_syspend_panel_selector = 6 + 8*i;
+								select_save_state = i;
+								no_select_state = false;
+								break;
+							}
+						}
+					} else no_select_state = false;
+				}
+				printf("test\n");
+			}
 			else if (currentSelect == displaySettings) displaySettingSelector = ++displaySettingSelector%3;
 			if (currentSelect != playgame) PlayWav(se_sys_cursor);
 		}

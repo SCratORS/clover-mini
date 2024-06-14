@@ -170,6 +170,8 @@ class Shell {
 
 		int16_t stable_position_syspend_panel_selector = 6;
 		int16_t select_to_syspend_panel_selector = stable_position_syspend_panel_selector;
+		bool no_select_state = false;
+
 		uint8_t cursor = 0;
 		int8_t displaySettingSelector = disaplayScale;
 		int16_t x_offset = stable_position;
