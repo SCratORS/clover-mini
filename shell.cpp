@@ -470,7 +470,8 @@ void Shell::drawSavesPanel() {
 void Shell::drawSaveState(uint8_t ndx, uint8_t xt, uint8_t yt) {
 	uint8_t pallete_1 = 0x1C;
 	uint8_t pallete_2 = 0x1D;
-	if (!temp_save_state && stable_position_syspend_panel_selector==6 + 8*(ndx-1)) {
+	if ((!temp_save_state && stable_position_syspend_panel_selector==6 + 8*(ndx-1))|
+		(temp_save_state && temp_save_state->id != courusel[sel]->id)) {
 		pallete_1 = 0x1E;
 		pallete_2 = 0x1F;
 	}
