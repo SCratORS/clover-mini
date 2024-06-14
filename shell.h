@@ -1,13 +1,13 @@
 #pragma once
 
 //#define DEBUG
-//#define INFO
+#define INFO
 //#define NESDEBUG
 
 #include <cstring>
 #include <cstdint>
 #include <vector>
-#include "inih/cpp/INIReader.h"
+#include "lib/INIReader.h"
 #include "nes/BUS.h"
 
 #define TBL_WIDTH 40  //32/40/54 (DIV 2 ONLY!)
@@ -139,7 +139,7 @@ class Shell {
 			uint8_t players;
 			uint8_t simultaneous;
 			Image * image;
-			std::vector<SavePoint*> savePointList;
+			SavePoint* savePointList[4];
 		};
 		struct navcard{
 			uint8_t id;
@@ -167,6 +167,9 @@ class Shell {
 		SavePoint * temp_save_state = NULL; 
 		int16_t x_offset_save_state = 0;
 		int16_t stable_position_save_state = 0;
+
+		int16_t stable_position_syspend_panel_selector = 6;
+		int16_t select_to_syspend_panel_selector = stable_position_syspend_panel_selector;
 		uint8_t cursor = 0;
 		int8_t displaySettingSelector = disaplayScale;
 		int16_t x_offset = stable_position;

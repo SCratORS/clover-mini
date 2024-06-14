@@ -339,7 +339,10 @@ void Shell::drawTempSaveState(uint16_t counter) {
 			drawSprite(0xB5, x+8, y+8, 0x11, 2, 1, opacity);
 		}
 		if (animateboom == 4) {
-			temp_save_state = NULL;
+			delete temp_save_state->image;
+			delete temp_save_state;
+			temp_save_state->image = nullptr;
+			temp_save_state = nullptr;
 			animateboom = 0;
 			select_save_state = 0;
 		}
@@ -364,18 +367,20 @@ void Shell::drawTempSaveState(uint16_t counter) {
 	for (uint8_t i = 1; i <= size; i++) drawSprite(0x4C, x+8*i,	y+size*8, attr, 1, 0, opacity);
 	drawSprite(0x4D, x+8+size*8, 	y+size*8, attr, 1, 0, opacity);
 
-	OAM[sp_index].x = 4;
-	OAM[sp_index].y = 4;
+	OAM[sp_index].x = temp_save_state_x;
+	OAM[sp_index].y = temp_save_state_y;
 	OAM[sp_index].image = temp_save_state->image;
 	OAM[sp_index].opacity = opacity;
 	if (size == 2) {
+		OAM[sp_index].image->x = 4;
 		OAM[sp_index].image->crop_width = 23;
 		OAM[sp_index].image->height = 15;
 	} else if (size == 3) {
+		OAM[sp_index].image->x = 4;
 		OAM[sp_index].image->crop_width = 31;
 		OAM[sp_index].image->height = 23;
 	} else if (size == 4) {
-		OAM[sp_index].x = 8;
+		OAM[sp_index].image->x = 8;
 		OAM[sp_index].image->crop_width = 31;
 		OAM[sp_index].image->height = 23;
 	}
@@ -473,10 +478,10 @@ void Shell::drawSaveState(uint8_t ndx, uint8_t xt, uint8_t yt) {
 	memset(&tblAttribute[(yt+1)*TBL_WIDTH + xt], 0x0F, 2);
 	for(uint8_t i=1; i<4; i++) {
 		memset(&tblName     [(yt+i)*TBL_WIDTH + xt + 3], 0x20, 4);
-		memset(&tblAttribute[(yt+i)*TBL_WIDTH + xt + 3], 0x0A, 4);
+		memset(&tblAttribute[(yt+i)*TBL_WIDTH + xt + 3], (courusel[sel]->savePointList[ndx-1]?0x1C:0x0A), 4);
 	}
-	memset(&tblAttribute[(yt+4)*TBL_WIDTH + xt + 3], 0x12, 4);
-	memset(&tblAttribute[ yt   *TBL_WIDTH + xt + 4], 0x13, 2);
+	memset(&tblAttribute[(yt+4)*TBL_WIDTH + xt + 3], (courusel[sel]->savePointList[ndx-1]?0x1D:0x12), 4);
+	memset(&tblAttribute[ yt   *TBL_WIDTH + xt + 4], (courusel[sel]->savePointList[ndx-1]?0x1D:0x13), 2);
 	memset(&tblName		[ yt   *TBL_WIDTH + xt + 3], 0x5E, 4);
 	memcpy(&tblName[(yt+2)*TBL_WIDTH + xt+4], "NO", 2);
 	memset(&tblAttribute[(yt+2)*TBL_WIDTH + xt+4], 0x32, 2);
@@ -494,18 +499,37 @@ void Shell::drawSaveState(uint8_t ndx, uint8_t xt, uint8_t yt) {
 	tblName[(yt+4)*TBL_WIDTH + xt+5] = 0x9B;
 	tblName[(yt+4)*TBL_WIDTH + xt+6] = 0x9C;
 	tblName[(yt+4)*TBL_WIDTH + xt+7] = 0x7F;
-	tblAttribute[ yt   *TBL_WIDTH + xt+3] = 0x0E | 0x80;	
-	tblAttribute[ yt   *TBL_WIDTH + xt+6] = 0x12;
+	tblAttribute[ yt   *TBL_WIDTH + xt+3] = (courusel[sel]->savePointList[ndx-1]?0x1D:0x0E) | 0x80;	
+	tblAttribute[ yt   *TBL_WIDTH + xt+6] = (courusel[sel]->savePointList[ndx-1]?0x1C:0x12);
 	tblAttribute[ yt   *TBL_WIDTH + xt+2] = 
 	tblAttribute[(yt+1)*TBL_WIDTH + xt+2] = 
 	tblAttribute[(yt+2)*TBL_WIDTH + xt+2] = 
-	tblAttribute[(yt+3)*TBL_WIDTH + xt+2] = 0x06 | 0x80;
+	tblAttribute[(yt+3)*TBL_WIDTH + xt+2] = (courusel[sel]->savePointList[ndx-1]?0x1C:0x06) | 0x80;
 	tblAttribute[(yt+4)*TBL_WIDTH + xt+2] =
 	tblAttribute[ yt   *TBL_WIDTH + xt+7] = 
 	tblAttribute[(yt+1)*TBL_WIDTH + xt+7] = 	
 	tblAttribute[(yt+2)*TBL_WIDTH + xt+7] = 
 	tblAttribute[(yt+3)*TBL_WIDTH + xt+7] = 
-	tblAttribute[(yt+4)*TBL_WIDTH + xt+7] = 0x16;
+	tblAttribute[(yt+4)*TBL_WIDTH + xt+7] = (courusel[sel]->savePointList[ndx-1]?0x1C:0x16);
+
+	if (courusel[sel]->savePointList[ndx-1]) {
+		int16_t x = (xt+2) * 8;
+		int16_t y = yt * 8;
+		OAM[sp_index].x = (xt+2) * 8;
+		OAM[sp_index].y = yt * 8;
+		OAM[sp_index].opacity = 100;
+		OAM[sp_index].image = courusel[sel]->savePointList[ndx-1]->image;
+		OAM[sp_index].image->crop_width = 32;
+		OAM[sp_index].image->height = 23;
+		sp_index++;
+		std::string minutes = std::to_string(courusel[sel]->savePointList[ndx-1]->time_shtamp / 60);
+		std::string seconds = std::to_string(courusel[sel]->savePointList[ndx-1]->time_shtamp % 60);
+		if (seconds.length()==1) seconds = "0"+seconds;
+		const char * stamp = (minutes+":"+seconds).c_str();
+		uint8_t leng = seconds.length() + minutes.length() + 1;
+		for (uint8_t i = 0; i < leng; i++)
+		drawSprite(stamp[i]-47, x +(35-leng*4) + 4 * i, y+29, 0x3B, 1);
+	}
 }
 
 void Shell::drawSettingsDisplayContent(uint8_t counter) {
@@ -712,6 +736,9 @@ void Shell::drawSelector(selectors mode) {
 	if (select_to_menu_position > select_menu_position) select_menu_position++;
 	else if (select_to_menu_position < select_menu_position) select_menu_position--;
 
+	if (select_to_syspend_panel_selector > stable_position_syspend_panel_selector) stable_position_syspend_panel_selector++;
+	else if (select_to_syspend_panel_selector < stable_position_syspend_panel_selector) stable_position_syspend_panel_selector--;
+
 	uint8_t y = 0;
 	uint8_t h = 0;
 	uint8_t w = 0;
@@ -757,6 +784,20 @@ void Shell::drawSelector(selectors mode) {
 				for (uint8_t c = 1; c <= h; c++) {
 					drawSprite(0x48, temp_save_state_x - 2,		temp_save_state_y + (c<<3) - 4,	0x15);
 					drawSprite(0x48, temp_save_state_x + (w<<3) - 7, temp_save_state_y + (c<<3) - 4,	0x95);
+				}
+			} else {
+				y = 20; h = 4; w = 6;
+				drawSprite(0x4A, (stable_position_syspend_panel_selector<<3)-1, 		(y<<3)-3,		0x95);
+				drawSprite(0x4A, (stable_position_syspend_panel_selector<<3)-1,		((y+h)<<3)+3,	0xD5);
+				drawSprite(0x4A, ((stable_position_syspend_panel_selector+w)<<3) - 7,	(y<<3)-3,		0x15);
+				drawSprite(0x4A, ((stable_position_syspend_panel_selector+w)<<3) - 7,	((y+h)<<3)+3,	0x55);
+				for (uint8_t c = 1; c < w; c++) {
+					drawSprite(0x49, ((stable_position_syspend_panel_selector+c)<<3) - 4,	(y<<3)-3,		0x15);
+					drawSprite(0x49, ((stable_position_syspend_panel_selector+c)<<3) - 4,	((y+h)<<3)+3,	0x55);
+				}
+				for (uint8_t c = 1; c <= h; c++) {
+					drawSprite(0x48, (stable_position_syspend_panel_selector<<3)-1,		((y+c)<<3)-3,	0x15);
+					drawSprite(0x48, ((stable_position_syspend_panel_selector+w)<<3)-7,	((y+c)<<3)-3,	0x95);
 				}
 			}
 		break;
@@ -812,7 +853,7 @@ printf("DEBUG: %s.\n", "Playing always sound clock");
 	if (currentSelect == playgame){
 		if (CART) {
 			NES.CPU.controller[0] = controller;
-			uint16_t SkeepBuffer = (int)(1789773.0/(SoundSamplesPerSec>>1)) * ((double)FPS/59.5f);
+			uint8_t SkeepBuffer = (int)(1789773.0/(SoundSamplesPerSec>>1)) * ((double)FPS/59.5f);
 			uint16_t totalCount = audioBufferCount;
 			audioBufferCount = 0;		
 			do {
@@ -840,9 +881,11 @@ printf("DEBUG: %s.\n", "Playing always sound clock");
 			temp_save_state->time_shtamp = clock_counter / 1789773;
 			temp_save_state->id = courusel[sel]->id;
 			temp_save_state->image = new Image();
-			temp_save_state->image->width = 31;
-			temp_save_state->image->height = 23;
-			uint8_t scale = SCREEN_SIZE / 32;
+			temp_save_state->image->width = 32;
+			temp_save_state->image->height = 24;
+			temp_save_state->image->x = 8;
+			temp_save_state->image->y = 4;
+			uint8_t scale = SCREEN_SIZE / temp_save_state->image->width;
 			for (uint8_t y = 0; y< temp_save_state->image->height; y++)
 			for (uint8_t x = 0; x< temp_save_state->image->width; x++) { 
 				BmpPixel bmpPixel;
@@ -850,8 +893,8 @@ printf("DEBUG: %s.\n", "Playing always sound clock");
 				bmpPixel.R = (pixel1 >> 16) & 0xFF;
 				bmpPixel.G = (pixel1 >> 8) & 0xFF;
 				bmpPixel.B = (pixel1 >> 0) & 0xFF;	
-				for (uint8_t y1 = 0; y1< scale; y1++) 
-				for (uint8_t x1 = 0; x1< scale; x1++) {
+				for (uint8_t y1 = 1; y1< scale; y1++) 
+				for (uint8_t x1 = 1; x1< scale; x1++) {
 					uint32_t pixel2 = FrameBuffer[(y*scale+y1)*SCREEN_SIZE + (x*scale+x1)];
 					bmpPixel.R = (((pixel2 >> 16) & 0xFF)+bmpPixel.R)>>1;
 					bmpPixel.G = (((pixel2 >> 8) & 0xFF)+bmpPixel.G)>>1;
@@ -925,11 +968,24 @@ printf("DEBUG: %s.\n", "Update controller action");
 					}
 				break;
 				case saves:
-					if (!(lastkbState&0x01) || counter%20==0) 
-						if (select_save_state < 3) {
-							select_save_state++;
-							PlayWav(se_sys_cursor);
+					if (!(lastkbState&0x01) || counter%20==0) {
+						if (temp_save_state && courusel[sel]->id == temp_save_state->id) {
+							if (select_save_state < 3) {
+								select_save_state++;
+								PlayWav(se_sys_cursor);
+							}
+						} else {
+							if (select_save_state+1 < 4)
+							for (uint8_t i = select_save_state+1; i < 4; i++) {
+								if (courusel[sel]->savePointList[i]) {
+									select_to_syspend_panel_selector = 6 + 8*i;
+									select_save_state = i;
+									PlayWav(se_sys_cursor);
+									break;
+								}
+							}
 						}
+					}
 				break;
 			}
 		}
@@ -955,11 +1011,24 @@ printf("DEBUG: %s.\n", "Update controller action");
 					}
 				break;
 				case saves:
-					if (!(lastkbState&0x02) || counter%20==0)
-						if (select_save_state > 0) {
-							select_save_state--;
-							PlayWav(se_sys_cursor);
+					if (!(lastkbState&0x02) || counter%20==0) {
+						if (temp_save_state && courusel[sel]->id == temp_save_state->id) {
+							if (select_save_state > 0) {
+								select_save_state--;
+								PlayWav(se_sys_cursor);
+							}
+						} else {
+							if (select_save_state > 0)
+							for (uint8_t i = select_save_state-1; i >= 0; i--) {
+								if (courusel[sel]->savePointList[i]) {
+									select_to_syspend_panel_selector = 6 + 8*i;
+									select_save_state = i;
+									PlayWav(se_sys_cursor);
+									break;
+								}
+							}
 						}
+					}
 				break;
 			}
 		}
@@ -1015,6 +1084,21 @@ printf("DEBUG: %s.\n", "Update controller action");
 				case displaySettings:
 					disaplayScale = displaySettingSelector;
 					PlayWav(se_sys_click);
+				break;
+				case saves:
+					if (temp_save_state && courusel[sel]->id == temp_save_state->id) {
+						if (courusel[sel]->savePointList[select_save_state]) {
+							delete courusel[sel]->savePointList[select_save_state]->image;
+							courusel[sel]->savePointList[select_save_state]->image = nullptr;
+							delete courusel[sel]->savePointList[select_save_state];
+							courusel[sel]->savePointList[select_save_state] = nullptr;
+						}
+						courusel[sel]->savePointList[select_save_state] = temp_save_state;
+						stable_position_syspend_panel_selector = 6 + 8 * select_save_state;
+						select_to_syspend_panel_selector = stable_position_syspend_panel_selector;
+						temp_save_state = nullptr;
+						PlayWav(se_sys_click);
+					}
 				break;
 			}
 		}
@@ -1154,8 +1238,8 @@ printf("DEBUG: %s.\n", "Render screen");
 			for (uint8_t sx = 0; sx< OAM[s].image->crop_width; sx++) {
 				uint16_t pindex = sy * OAM[s].image->width + sx;
 				spr_color = (OAM[s].image->rawData[pindex].R << 16) | (OAM[s].image->rawData[pindex].G << 8) | OAM[s].image->rawData[pindex].B;
-				if (OAM[s].opacity < 100) spr_color = avrColor(OAM[s].opacity, 100-OAM[s].opacity, spr_color, GetPixel(OAM[s].x+temp_save_state_x+sx, OAM[s].y+temp_save_state_y+sy));
-				PutPixel(OAM[s].x+temp_save_state_x+sx, OAM[s].y+temp_save_state_y+sy, spr_color);
+				if (OAM[s].opacity < 100) spr_color = avrColor(OAM[s].opacity, 100-OAM[s].opacity, spr_color, GetPixel(OAM[s].x+OAM[s].image->x+sx, OAM[s].y+OAM[s].image->y+sy));
+				PutPixel(OAM[s].x+OAM[s].image->x+sx, OAM[s].y+OAM[s].image->y+sy, spr_color);
 				pindex++;
 			}
 			OAM[s].image = NULL;
