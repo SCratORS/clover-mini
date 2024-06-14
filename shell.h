@@ -7,7 +7,7 @@
 #include <cstring>
 #include <cstdint>
 #include <vector>
-#include "lib/INIReader.h"
+#include "inih/cpp/INIReader.h"
 #include "nes/BUS.h"
 
 #define TBL_WIDTH 40  //32/40/54 (DIV 2 ONLY!)
