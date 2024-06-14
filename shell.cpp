@@ -157,6 +157,9 @@ bool Shell::LoadData() {
 					Card->id = index++;
 					Card->select = false;
 					Card->pSelect = new bool;
+
+					for (uint8_t i = 0; i<4; i++) Card->savePointList[i] = nullptr;
+
 					NavCard->id = Card->id;
 					NavCard->select = Card->pSelect;
 					courusel.push_back(Card);
@@ -457,7 +460,6 @@ void Shell::drawSavesPanel() {
 	drawSaveState(1, 4, 20);
 	drawSaveState(2, 12, 20);
 	drawSaveState(3, 20, 20);
-
 	if (SCREEN_SIZE>256) drawSaveState(4, 28, 20);
 	offset = HALF_TBL_WIDTH - 10;
 	drawSprite(0x46, offset<<3, 17<<3, 0x03, 2);
@@ -468,12 +470,10 @@ void Shell::drawSavesPanel() {
 void Shell::drawSaveState(uint8_t ndx, uint8_t xt, uint8_t yt) {
 	uint8_t pallete_1 = 0x1C;
 	uint8_t pallete_2 = 0x1D;
-
 	if (!temp_save_state && stable_position_syspend_panel_selector==6 + 8*(ndx-1)) {
 		pallete_1 = 0x1E;
 		pallete_2 = 0x1F;
 	}
-
 	uint16_t tbl_sv_st_16[4][2] = {
 		{0x4342, 0x5352},
 		{0x4544, 0x5554},
@@ -519,7 +519,6 @@ void Shell::drawSaveState(uint8_t ndx, uint8_t xt, uint8_t yt) {
 	tblAttribute[(yt+2)*TBL_WIDTH + xt+7] = 
 	tblAttribute[(yt+3)*TBL_WIDTH + xt+7] = 
 	tblAttribute[(yt+4)*TBL_WIDTH + xt+7] = (courusel[sel]->savePointList[ndx-1]?pallete_1:0x16);
-
 	if (courusel[sel]->savePointList[ndx-1]) {
 		int16_t x = (xt+2) * 8;
 		int16_t y = yt * 8;
@@ -1153,7 +1152,6 @@ printf("DEBUG: %s.\n", "Update controller action");
 						}
 					} else no_select_state = false;
 				}
-				printf("test\n");
 			}
 			else if (currentSelect == displaySettings) displaySettingSelector = ++displaySettingSelector%3;
 			if (currentSelect != playgame) PlayWav(se_sys_cursor);
