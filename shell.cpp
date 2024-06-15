@@ -441,7 +441,7 @@ void Shell::drawTempSaveState(uint16_t counter) {
 }
 
 void Shell::drawSavesPanel() {
-	uint8_t offset = stable_position+4;
+	uint8_t offset = select_to+4;
 	uint8_t l = 9;
 	memset(&tblName[17*TBL_WIDTH], 0x01, TBL_WIDTH);
 	memset(&tblName[18*TBL_WIDTH], 0x20, TBL_WIDTH*12);
@@ -1139,19 +1139,21 @@ printf("DEBUG: %s.\n", "Update controller action");
 		if (controller&0x04 && !(lastkbState&0x04)) {
 			if (currentSelect == menu) currentSelect = currentSelect = courusel.size()==0?empty:gamelist;
 			else if (currentSelect == gamelist) {
-				if (courusel[sel]) {
-					currentSelect = saves;
-					if (!courusel[sel]->savePointList[select_save_state]){
-						no_select_state = true;
-						for (uint8_t i = 0; i < 4; i++) {
-							if (courusel[sel]->savePointList[i]) {
-								select_to_syspend_panel_selector = 6 + 8*i;
-								select_save_state = i;
-								no_select_state = false;
-								break;
+				if (select_to == stable_position) {
+					if (courusel[sel]) {
+						currentSelect = saves;
+						if (!courusel[sel]->savePointList[select_save_state]){
+							no_select_state = true;
+							for (uint8_t i = 0; i < 4; i++) {
+								if (courusel[sel]->savePointList[i]) {
+									select_to_syspend_panel_selector = 6 + 8*i;
+									select_save_state = i;
+									no_select_state = false;
+									break;
+								}
 							}
-						}
-					} else no_select_state = false;
+						} else no_select_state = false;
+					}
 				}
 			}
 			else if (currentSelect == displaySettings) displaySettingSelector = ++displaySettingSelector%3;
