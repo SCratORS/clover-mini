@@ -422,9 +422,9 @@ int16_t current_pos_y = -100;
 
 void Shell::drawNavigate(uint8_t counter) {
 	#ifdef DEBUG 
-	printf("DEBUG: %s.\n", "drawCourusel");
+	printf("DEBUG: %s.\n", "drawNavigate");
 	#endif
-	if (!(currentSelect == gamelist || currentSelect == menu)) return;
+	if (!(currentSelect == gamelist || currentSelect == menu || currentSelect == preparegame)) return;
 	if (!counter) cursor = (++cursor)%3;
 	if (max_length_navbar > SCREEN_SIZE-4) {
 		navigate_offset = 0 - ((float)(max_length_navbar - SCREEN_SIZE + 4 ) / navigate.size()) * sel;		
