@@ -7,7 +7,7 @@
 #include <cstring>
 #include <cstdint>
 #include <vector>
-#include "inih/cpp/INIReader.h"
+#include "lib/INIReader.h"
 #include "nes/BUS.h"
 
 #define TBL_WIDTH 40  //32/40/54 (DIV 2 ONLY!)
@@ -17,6 +17,7 @@ const int16_t SCREEN_SIZE = TBL_WIDTH*8;
 const int16_t TBL_SIZE    = TBL_WIDTH*30; //30 = 240/8
 const int16_t HALF_TBL_WIDTH = TBL_WIDTH>>1;
 const int16_t COURUSEL_START = HALF_TBL_WIDTH - 5;
+const uint8_t maxSaveState = SCREEN_SIZE<320?2:3;
 
 
 class Shell {
@@ -33,7 +34,7 @@ class Shell {
 	private:
 		enum selectors {empty, gamelist, menu, saves, displaySettings, playgame, preparegame};
 		uint32_t counter = 0;
-		uint8_t disaplayScale = 1;
+		
 
 		uint8_t lastkbState;
 		uint8_t tblName[TBL_SIZE];
@@ -44,6 +45,11 @@ class Shell {
 		int16_t * audiosample = new int16_t[2048];
 		int16_t * tempsample = new int16_t[2048];
 		
+
+		struct Settings {
+			uint8_t disaplayScale = 1;
+		} setting;
+
 		struct {
 			uint32_t color[4];
 		} pallete[32];
@@ -126,20 +132,23 @@ class Shell {
 			uint8_t id;
 			uint16_t time_shtamp;
 			Image * image;
+			State * state;
 		};
+
 		struct card{
 			uint8_t id;
 			int16_t x_pos;
 			int16_t y_pos;
 			bool select;
 			bool * pSelect;
+			std::string path;
 			std::string exec;
 			std::string name;
 			std::string date;
 			uint8_t players;
 			uint8_t simultaneous;
 			Image * image;
-			SavePoint* savePointList[4];
+			SavePoint * savePointList[4];
 		};
 		struct navcard{
 			uint8_t id;
@@ -173,7 +182,7 @@ class Shell {
 		bool no_select_state = false;
 
 		uint8_t cursor = 0;
-		int8_t displaySettingSelector = disaplayScale;
+		int8_t displaySettingSelector = setting.disaplayScale;
 		int16_t x_offset = stable_position;
 		uint16_t max_length;
 		uint8_t  controller;
@@ -182,7 +191,12 @@ class Shell {
 		uint32_t avrColor(uint8_t a, uint8_t b, uint32_t c1, uint32_t c2);
 		void PutPixel(int16_t px,int16_t py, uint32_t color);
 		uint32_t GetPixel(int16_t px,int16_t py);
+		bool deleteSavePoint(SavePoint * savepoint);
+		void SaveSettings();
+		void LoadSettings();
 		bool loadWav(WavFile * wavFile, const char* fname);
+		void SaveSaves();
+		void LoadSaves(SavePoint * savePointList[4], uint8_t id, const char* fname);
 		void PlayWavClock(WavFile * file, bool loop = false);
 		void PlayWav(WavFile * file);
 		void drawTopBar();

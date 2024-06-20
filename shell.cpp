@@ -1,3 +1,9 @@
+/*----TO-DO list----*/
+/* Меню настроек */
+/* Меню о игре */
+/* Меню QR кода */
+/* Замена BMP на PNG */
+
 #include "Shell.h"
 #include <cstdio>
 #include <string>
@@ -16,6 +22,7 @@ namespace fs = std::filesystem;
 
 uint8_t sp_index = 0;
 uint64_t clock_counter;
+uint16_t sel = 0;
 
 bool Shell::loadWav(WavFile * wavFile, const char* fname) {
 	#ifdef INFO
@@ -50,6 +57,7 @@ bool Shell::loadWav(WavFile * wavFile, const char* fname) {
 
 Shell::Shell() {
 	fadeProcents = 100;
+	LoadSettings();
 }
 
 void Shell::loadBitmap(const char* fname, Image * image) {
@@ -100,6 +108,168 @@ void Shell::loadBitmap(const char* fname, Image * image) {
 	}
 }
 
+void Shell::SaveSettings() {
+	#ifdef INFO
+	printf("INFO: %s\n", "Save settings.");
+	#endif
+	FILE* fb = fopen("setting.cfg", "wb");
+	if (fb) {
+		fwrite(&setting, sizeof(Settings), 1, fb);
+	} else {
+		#ifdef INFO
+		printf("ERROR: %s\n", "Can't create save file.");
+		#endif	
+	}
+}
+
+void Shell::LoadSettings() {
+	#ifdef INFO
+	printf("INFO: %s\n", "Load settings.");
+	#endif
+	FILE* fb = fopen("setting.cfg", "rb");
+	if (fb) {
+		fread(&setting, sizeof(Settings), 1, fb);
+	} else {
+		#ifdef INFO
+		printf("ERROR: %s\n", "Can't load save file.");
+		#endif	
+	}
+}
+
+
+void Shell::SaveSaves() {
+	if (!courusel[sel]) return;
+	FILE* fb = fopen((courusel[sel]->path + "\\gamesaves.sav").c_str(), "wb");
+	if (fb) {
+		for (uint8_t i = 0; i<4; i++) {
+			if (courusel[sel]->savePointList[i]) {
+				fwrite(&i, sizeof(uint8_t), 1, fb);
+				fwrite(&courusel[sel]->savePointList[i]->time_shtamp, sizeof(uint16_t), 1, fb);
+				if (courusel[sel]->savePointList[i]->image) {
+					uint32_t length = 7 + sizeof(BmpPixel) * courusel[sel]->savePointList[i]->image->rawData.size();
+					fwrite(&length, sizeof(uint32_t), 1, fb);
+					fwrite(&courusel[sel]->savePointList[i]->image->width, sizeof(uint8_t), 1, fb);
+					fwrite(&courusel[sel]->savePointList[i]->image->height, sizeof(uint8_t), 1, fb);
+					fwrite(&courusel[sel]->savePointList[i]->image->crop_width, sizeof(uint8_t), 1, fb);
+					fwrite(&courusel[sel]->savePointList[i]->image->x, sizeof(uint16_t), 1, fb);
+					fwrite(&courusel[sel]->savePointList[i]->image->y, sizeof(uint16_t), 1, fb);
+					fwrite(courusel[sel]->savePointList[i]->image->rawData.data(), sizeof(BmpPixel), courusel[sel]->savePointList[i]->image->rawData.size(), fb);
+				} else fwrite(0x00, sizeof(uint32_t), 1, fb);
+				
+				if (courusel[sel]->savePointList[i]->state) {
+					uint32_t mapStateSize = courusel[sel]->savePointList[i]->state->CART.sizeMapState;
+					uint32_t CHRamSize = courusel[sel]->savePointList[i]->state->CART.maxCHRAddr;
+					uint32_t PRGRamSize = courusel[sel]->savePointList[i]->state->CART.maxPRGAddr;
+
+					uint32_t length = 0x800 + 4 + sizeof(CPUState) + sizeof(PPUState) + sizeof(APUState) + 
+					2 + 2 + 4 + mapStateSize + 4 + CHRamSize + 4 + PRGRamSize;
+
+					fwrite(&length, sizeof(uint32_t), 1, fb);
+
+					fwrite(&courusel[sel]->savePointList[i]->state->RAM, sizeof(uint8_t), 0x800, fb);
+					
+					fwrite(&courusel[sel]->savePointList[i]->state->nSystemClockCounter, sizeof(uint32_t), 1, fb);
+
+					fwrite(&courusel[sel]->savePointList[i]->state->CPU, sizeof(CPUState), 1, fb);
+					fwrite(&courusel[sel]->savePointList[i]->state->PPU, sizeof(PPUState), 1, fb);
+					fwrite(&courusel[sel]->savePointList[i]->state->APU, sizeof(APUState), 1, fb);
+
+					fwrite(&courusel[sel]->savePointList[i]->state->CART.maxCHRAddr, sizeof(uint16_t), 1, fb);
+					fwrite(&courusel[sel]->savePointList[i]->state->CART.maxPRGAddr, sizeof(uint16_t), 1, fb);
+					
+					fwrite(&mapStateSize, sizeof(uint32_t), 1, fb);
+					if (mapStateSize) {
+						fwrite(courusel[sel]->savePointList[i]->state->CART.mapperState, sizeof(uint8_t), mapStateSize, fb);
+					}
+					
+					fwrite(&CHRamSize, sizeof(uint32_t), 1, fb);
+					if (CHRamSize) {
+						fwrite(courusel[sel]->savePointList[i]->state->CART.CHRam, sizeof(uint8_t), CHRamSize, fb);
+					}
+					
+					fwrite(&PRGRamSize, sizeof(uint32_t), 1, fb);
+					if (PRGRamSize) {
+						fwrite(courusel[sel]->savePointList[i]->state->CART.PRGRam, sizeof(uint8_t), PRGRamSize, fb);
+					}
+
+				} else fwrite(0x00, sizeof(uint32_t), 1, fb);
+				
+			}
+		}
+		fclose(fb);
+	}
+}
+
+void Shell::LoadSaves(SavePoint * savePointList[4], uint8_t id, const char* fname) {
+	FILE* fb = fopen(fname, "rb");
+	if (fb) {
+		fseek(fb , 0, SEEK_SET);
+		while (!feof(fb)) {
+			uint8_t ndx;
+			if (!fread(&ndx, sizeof(uint8_t), 1, fb)) break;
+			if (ndx > 3 || savePointList[ndx]) {
+				#ifdef INFO
+				printf("ERROR: %d save state already exists or very large.\n", ndx);
+				#endif
+				break;
+			}
+			savePointList[ndx] = new SavePoint();
+			savePointList[ndx]->id = id;
+			fread(&savePointList[ndx]->time_shtamp, sizeof(uint16_t), 1, fb);
+			uint32_t length;
+			fread(&length, sizeof(uint32_t), 1, fb);
+			if (length) {
+				savePointList[ndx]->image = new Image();
+				fread(&savePointList[ndx]->image->width, sizeof(uint8_t), 1, fb);
+				fread(&savePointList[ndx]->image->height, sizeof(uint8_t), 1, fb);
+				fread(&savePointList[ndx]->image->crop_width, sizeof(uint8_t), 1, fb);
+				fread(&savePointList[ndx]->image->x, sizeof(uint16_t), 1, fb);
+				fread(&savePointList[ndx]->image->y, sizeof(uint16_t), 1, fb);
+				savePointList[ndx]->image->rawData.resize((length-7) / sizeof(BmpPixel));
+				fread(savePointList[ndx]->image->rawData.data(), sizeof(BmpPixel), savePointList[ndx]->image->rawData.size(), fb);
+			}
+			
+			fread(&length, sizeof(uint32_t), 1, fb);
+			if (length) {
+				savePointList[ndx]->state = new State();
+				fread(&savePointList[ndx]->state->RAM, sizeof(uint8_t),  0x800, fb);
+				fread(&savePointList[ndx]->state->nSystemClockCounter, sizeof(uint32_t), 1, fb);
+				fread(&savePointList[ndx]->state->CPU, sizeof(CPUState), 1, fb);
+				fread(&savePointList[ndx]->state->PPU, sizeof(PPUState), 1, fb);
+				fread(&savePointList[ndx]->state->APU, sizeof(APUState), 1, fb);
+
+				fread(&savePointList[ndx]->state->CART.maxCHRAddr, sizeof(uint16_t), 1, fb);
+				fread(&savePointList[ndx]->state->CART.maxPRGAddr, sizeof(uint16_t), 1, fb);
+				
+				uint32_t mapStateSize;
+				fread(&mapStateSize, sizeof(uint32_t), 1, fb);
+				if (mapStateSize) {
+					savePointList[ndx]->state->CART.sizeMapState = mapStateSize;
+					savePointList[ndx]->state->CART.mapperState = new uint8_t[mapStateSize];
+					fread(savePointList[ndx]->state->CART.mapperState, sizeof(uint8_t), mapStateSize, fb);
+				} else {
+					#ifdef INFO
+					printf("ERROR: MapperStateSize = %d\n", mapStateSize);
+					#endif
+				}
+				uint32_t CHRamSize;
+				fread(&CHRamSize, sizeof(uint32_t), 1, fb);
+				if (CHRamSize) {
+					savePointList[ndx]->state->CART.CHRam = new uint8_t[CHRamSize];
+					fread(savePointList[ndx]->state->CART.CHRam, sizeof(uint8_t), CHRamSize, fb);
+				}
+				uint32_t PRGRamSize;
+				fread(&PRGRamSize, sizeof(uint32_t), 1, fb);
+				if (PRGRamSize) {
+					savePointList[ndx]->state->CART.PRGRam = new uint8_t[PRGRamSize];
+					fread(savePointList[ndx]->state->CART.PRGRam, sizeof(uint8_t), PRGRamSize, fb);
+				}
+			}
+		};
+		fclose(fb);
+	}	
+}
+
 bool Shell::LoadData() {
 	#ifdef INFO
 	printf("INFO: %s\n", "Loading data.");
@@ -126,6 +296,7 @@ bool Shell::LoadData() {
 	 					continue;
 	 				}
 					card * Card = new card;	
+	 				Card->path = entry.path().string();
 					std::string icon = reader.Get("Desktop Entry", "Icon", "");
 					Card->exec = reader.Get("Desktop Entry", "Exec", "");
 					Card->name = reader.Get("Desktop Entry", "Name", "Unknown");
@@ -159,7 +330,7 @@ bool Shell::LoadData() {
 					Card->pSelect = new bool;
 
 					for (uint8_t i = 0; i<4; i++) Card->savePointList[i] = nullptr;
-
+					LoadSaves(Card->savePointList, Card->id, (Card->path + "\\gamesaves.sav").c_str());
 					NavCard->id = Card->id;
 					NavCard->select = Card->pSelect;
 					courusel.push_back(Card);
@@ -193,9 +364,12 @@ bool Shell::LoadData() {
 	return true;
 }
 
-uint16_t sel = 0;
+
 uint8_t l_y = 7;
 void Shell::drawCourusel(uint8_t y, uint8_t counter) {
+	#ifdef DEBUG 
+	printf("DEBUG: %s.\n", "drawCourusel");
+	#endif
 	uint8_t h = 10;
 	uint8_t w = 10;
 	max_length = courusel.size() * (w + 1);
@@ -232,7 +406,7 @@ void Shell::drawCourusel(uint8_t y, uint8_t counter) {
 			tblName[bn] = c==0?0x3B:(c==w-1?0x3D:0x3C);
 			tblAttribute[bn] = courusel[i]->select?0x09:0x11;
 			for (uint8_t v = 1; v < h; v++) {
-				tblName[bn+v*TBL_WIDTH] = c==0?0x5B:(c==w-1?0x5C:(c==w-3&&v==h-1?(courusel[i]->players==1?0x8D:(courusel[i]->simultaneous==1?0x9D:0x8C)):(c==w-2&&v==h-1?(courusel[i]->simultaneous==1?0x9E:0x8E):(v==h-1&&c>0&&c<5?0x8F:0x4B))));
+				tblName[bn+v*TBL_WIDTH] = c==0?0x5B:(c==w-1?0x5C:(c==w-3&&v==h-1?(courusel[i]->players==1?0x8D:(courusel[i]->simultaneous==1?0x9D:0x8C)):(c==w-2&&v==h-1?(courusel[i]->simultaneous==1?0x9E:0x8E):(v==h-1&&c>0&&c<5?(courusel[i]->savePointList[c-1]?0x9F:0x8F):0x4B))));
 				tblAttribute[bn+v*TBL_WIDTH] = v==(h-1)?(courusel[i]->select?0x05:0x0D):(courusel[i]->select?0x09:0x11);
 			
 			}
@@ -247,6 +421,9 @@ int16_t current_pos_x = -100;
 int16_t current_pos_y = -100;
 
 void Shell::drawNavigate(uint8_t counter) {
+	#ifdef DEBUG 
+	printf("DEBUG: %s.\n", "drawCourusel");
+	#endif
 	if (!(currentSelect == gamelist || currentSelect == menu)) return;
 	if (!counter) cursor = (++cursor)%3;
 	if (max_length_navbar > SCREEN_SIZE-4) {
@@ -281,6 +458,9 @@ void Shell::drawMenu() {
 }
 
 void Shell::drawTopBar() {
+	#ifdef DEBUG 
+	printf("DEBUG: %s.\n", "drawTopBar");
+	#endif
 	for (uint8_t i = 0; i < 4; i++) {
 		memset(&tblName[i*TBL_WIDTH], 0x10*i, TBL_WIDTH);
 		if (i) memset(&tblAttribute[i*TBL_WIDTH + (HALF_TBL_WIDTH) - 8], 0x04, 16);
@@ -289,6 +469,9 @@ void Shell::drawTopBar() {
 }
 
 void Shell::drawDownBar() {
+	#ifdef DEBUG 
+	printf("DEBUG: %s.\n", "drawDownBar");
+	#endif
 	for (uint8_t i = 0; i < 4; i++) memset(&tblName[(i+26)*TBL_WIDTH], (i==1?0x11:0x10) + (i<<4), TBL_WIDTH);
 	memset(&tblAttribute[26*TBL_WIDTH], 0x08, TBL_WIDTH<<2);
 	for (uint8_t i = 0; i<TBL_WIDTH; i++) {
@@ -306,6 +489,9 @@ void Shell::drawDownBar() {
 int8_t animateboom = 0;
 uint8_t animateboom_y = 0;
 void Shell::drawTempSaveState(uint16_t counter) {
+	#ifdef DEBUG 
+	printf("DEBUG: %s.\n", "drawTempSaveState");
+	#endif
 	if (!temp_save_state) return;
 	uint8_t size = 2;
 	uint16_t x = 20;
@@ -328,6 +514,11 @@ void Shell::drawTempSaveState(uint16_t counter) {
 		y += 4;
 		opacity = 70;
 	}
+	if (currentSelect == saves && select_save_state < 0) {
+		x = temp_save_state_x + 8;
+		y = temp_save_state_y + 8;
+		attr = 0x09;
+	}
 
 	y += sin(rad) * 6;
 
@@ -342,12 +533,22 @@ void Shell::drawTempSaveState(uint16_t counter) {
 			drawSprite(0xB5, x+8, y+8, 0x11, 2, 1, opacity);
 		}
 		if (animateboom == 4) {
-			delete temp_save_state->image;
-			delete temp_save_state;
-			temp_save_state->image = nullptr;
-			temp_save_state = nullptr;
+			if (deleteSavePoint(temp_save_state)) temp_save_state = nullptr;
 			animateboom = 0;
 			select_save_state = 0;
+
+			if (currentSelect == saves) {
+				no_select_state = true;
+				for (uint8_t i = 0; i <=maxSaveState; i++) {
+					if (courusel[sel]->savePointList[i]) {
+						select_to_syspend_panel_selector = 6 + 8*i;
+						select_save_state = i;
+						no_select_state = false;
+						break;
+					}
+				}
+			}
+
 		}
 		if (counter%4 == 0) animateboom++;
 		return;
@@ -393,7 +594,7 @@ void Shell::drawTempSaveState(uint16_t counter) {
 		if (currentSelect == saves) {
 			bool blink = counter%64 < 32;
 			if (select_save_state > 0) drawSprite(0xE7, x - (blink?16:14), 4 + y+(size-1)*4, 0x19, 1, 2);
-			if (select_save_state < 3) drawSprite(0xE8, x+(size+1)*8 + (blink?15:13),	4 + y+(size-1)*4, 0x19, 1, 2);
+			if (select_save_state < maxSaveState) drawSprite(0xE8, x+(size+1)*8 + (blink?15:13),	4 + y+(size-1)*4, 0x19, 1, 2);
 		} else {
 			bool blink = counter%64 < 32;
 			drawSprite(0xE3, x+4+(size>>1)*8, 	y-2+size*8, 0x07, 2, 1);
@@ -545,15 +746,15 @@ void Shell::drawSettingsDisplayContent(uint8_t counter) {
 	for (uint8_t i = 0; i<5; i++)
 	memset(&tblAttribute[(i+8+6*displaySettingSelector)*TBL_WIDTH + 8], 0x1A, TBL_WIDTH-16);
 
-	tblName[10*TBL_WIDTH + HALF_TBL_WIDTH - 7] = disaplayScale == 0?0xA8:0xA7;
+	tblName[10*TBL_WIDTH + HALF_TBL_WIDTH - 7] = setting.disaplayScale == 0?0xA8:0xA7;
 	memcpy(&tblName[10*TBL_WIDTH + HALF_TBL_WIDTH - 5], "CRT filter", 10);
 	memset(&tblAttribute[10*TBL_WIDTH + HALF_TBL_WIDTH - 5], displaySettingSelector==0?0x3A:0x27, 10);
 
-	tblName[16*TBL_WIDTH + HALF_TBL_WIDTH - 7] = disaplayScale == 1?0xA8:0xA7;
+	tblName[16*TBL_WIDTH + HALF_TBL_WIDTH - 7] = setting.disaplayScale == 1?0xA8:0xA7;
 	memcpy(&tblName[16*TBL_WIDTH + HALF_TBL_WIDTH - 5], "4:3", 3);
 	memset(&tblAttribute[16*TBL_WIDTH + HALF_TBL_WIDTH - 5], displaySettingSelector==1?0x3A:0x27, 3);
 
-	tblName[22*TBL_WIDTH + HALF_TBL_WIDTH - 7] = disaplayScale == 2?0xA8:0xA7;
+	tblName[22*TBL_WIDTH + HALF_TBL_WIDTH - 7] = setting.disaplayScale == 2?0xA8:0xA7;
 	memcpy(&tblName[22*TBL_WIDTH + HALF_TBL_WIDTH - 5], "Pixel Perfect", 13);
 	memset(&tblAttribute[22*TBL_WIDTH + HALF_TBL_WIDTH - 5], displaySettingSelector==2?0x3A:0x27, 13);
 
@@ -595,6 +796,9 @@ void Shell::drawSettingsDisplayPanel(uint8_t counter) {
 }
 
 void Shell::drawTitleBar(uint8_t x, uint8_t y, uint8_t l) {
+	#ifdef DEBUG 
+	printf("DEBUG: %s.\n", "drawTitleBar");
+	#endif
 	l_y = y;
 	for (uint8_t i = 0; i<l; i++) {
 		tblName[y*TBL_WIDTH + i + x] = tblName[(y+2)*TBL_WIDTH + i + x] = i==0?0x3A:(i==l-1?0x3A:0x39);
@@ -606,6 +810,9 @@ void Shell::drawTitleBar(uint8_t x, uint8_t y, uint8_t l) {
 }
 
 void Shell::drawHintBar(selectors mode) {
+	#ifdef DEBUG 
+	printf("DEBUG: %s.\n", "drawHintBar");
+	#endif
 	uint8_t offset = 0;
 	uint8_t select [4] = {0x02,0x03,0x04,0x05};
 	uint8_t start [3] = {0x06,0x07,0x08};
@@ -670,9 +877,9 @@ void Shell::drawHintBar(selectors mode) {
 				tblName[27*TBL_WIDTH+offset] = 0x7C;
 				tblAttribute[27*TBL_WIDTH+offset] = 0x0F;
 				offset+=1;
-				memcpy(&tblName[27*TBL_WIDTH+offset], "Select", 6);
-				memset(&tblAttribute[27*TBL_WIDTH+offset], 0x2F, 6);
-				offset+=6+add;
+				memcpy(&tblName[27*TBL_WIDTH+offset], "Pick", 4);
+				memset(&tblAttribute[27*TBL_WIDTH+offset], 0x2F, 4);
+				offset+=4+add;
 				memcpy(&tblName[27*TBL_WIDTH+offset], &start, 3);
 				memset(&tblAttribute[27*TBL_WIDTH+offset], 0x0F, 3);
 				offset+=3;
@@ -682,28 +889,28 @@ void Shell::drawHintBar(selectors mode) {
 				tblName[27*TBL_WIDTH+offset] = 0x51;
 				tblAttribute[27*TBL_WIDTH+offset] = 0x0F;
 				offset+=1;
-				memcpy(&tblName[27*TBL_WIDTH+offset], "Back", 4);
-				memset(&tblAttribute[27*TBL_WIDTH+offset], 0x2F, 4);
-				offset+=4+add;
+				memcpy(&tblName[27*TBL_WIDTH+offset], "Remove", 6);
+				memset(&tblAttribute[27*TBL_WIDTH+offset], 0x2F, 6);
+				offset+=6+add;
 				tblName[27*TBL_WIDTH+offset] = 0x50;
 				tblAttribute[27*TBL_WIDTH+offset] = 0x0F;
 				offset+=1;
 				memcpy(&tblName[27*TBL_WIDTH+offset], "Save", 4);
 				memset(&tblAttribute[27*TBL_WIDTH+offset], 0x2F, 4);
 			} else {
-				offset = (TBL_WIDTH-(27+add+add)) >> 1;
+				offset = (TBL_WIDTH-(24+add+add+add)) >> 1;
 				tblName[27*TBL_WIDTH+offset] = 0x7C;
 				tblAttribute[27*TBL_WIDTH+offset] = 0x0F;
 				offset+=1;
-				memcpy(&tblName[27*TBL_WIDTH+offset], "Select", 6);
-				memset(&tblAttribute[27*TBL_WIDTH+offset], 0x2F, 6);
-				offset+=6+add;
+				memcpy(&tblName[27*TBL_WIDTH+offset], "Pick", 4);
+				memset(&tblAttribute[27*TBL_WIDTH+offset], 0x2F, 4);
+				offset+=4+add;
 				memcpy(&tblName[27*TBL_WIDTH+offset], &select, 4);
 				memset(&tblAttribute[27*TBL_WIDTH+offset], 0x0F, 4);
 				offset+=4;
 				memcpy(&tblName[27*TBL_WIDTH+offset], "Move", 4);
 				memset(&tblAttribute[27*TBL_WIDTH+offset], 0x2F, 4);
-				offset+=5;
+				offset+=4+add;
 				memcpy(&tblName[27*TBL_WIDTH+offset], &start, 3);
 				memset(&tblAttribute[27*TBL_WIDTH+offset], 0x0F, 4);
 				offset+=3;
@@ -738,6 +945,9 @@ void Shell::drawHintBar(selectors mode) {
 }
 
 void Shell::drawSelector(selectors mode) {
+	#ifdef DEBUG 
+	printf("DEBUG: %s.\n", "drawSelector");
+	#endif
 	if (select_to > stable_position) stable_position++;
 	else if (select_to < stable_position) stable_position--;
 
@@ -842,6 +1052,39 @@ void Shell::PlayWavClock(WavFile * file, bool loop) {
 	}
 }
 
+bool Shell::deleteSavePoint(SavePoint * savepoint) {
+	#ifdef DEBUG 
+	printf("DEBUG: %s.\n", "deleteSavePoint");
+	#endif
+	if (savepoint) {
+		if (savepoint->state->CART.CHRam) {
+			delete savepoint->state->CART.CHRam;
+			savepoint->state->CART.CHRam = nullptr;
+		}
+		if (savepoint->state->CART.PRGRam) {
+			delete savepoint->state->CART.PRGRam;
+			savepoint->state->CART.PRGRam = nullptr;
+		}
+		if (savepoint->state->CART.mapperState) {
+			delete savepoint->state->CART.mapperState;
+			savepoint->state->CART.mapperState = nullptr;
+		}
+		if (savepoint->state) {
+			delete savepoint->state;
+			savepoint->state = nullptr;
+		}
+		if (savepoint->image) {
+			delete savepoint->image;
+			savepoint->image = nullptr;
+		}
+		delete savepoint;
+		savepoint = nullptr;
+	}
+	if (savepoint) return false;
+	else return true;
+}
+
+
 void Shell::Update(double FPS) {
 
 #ifdef DEBUG
@@ -861,6 +1104,42 @@ printf("DEBUG: %s.\n", "Playing always sound clock");
 
 	if (currentSelect == playgame){
 		if (CART) {
+			if (controller&0x10 && controller&0x20) {
+				temp_save_state = new SavePoint();
+				temp_save_state->time_shtamp = clock_counter / 1789773;
+				temp_save_state->id = courusel[sel]->id;
+				temp_save_state->image = new Image();
+				temp_save_state->image->width = 32;
+				temp_save_state->image->height = 24;
+				temp_save_state->image->x = 8;
+				temp_save_state->image->y = 4;
+				uint8_t scale = SCREEN_SIZE / temp_save_state->image->width;
+				for (uint8_t y = 0; y< temp_save_state->image->height; y++)
+				for (uint8_t x = 0; x< temp_save_state->image->width; x++) { 
+					BmpPixel bmpPixel;
+					uint32_t pixel1 = FrameBuffer[(y*SCREEN_SIZE + x)*scale];
+					bmpPixel.R = (pixel1 >> 16) & 0xFF;
+					bmpPixel.G = (pixel1 >> 8) & 0xFF;
+					bmpPixel.B = (pixel1 >> 0) & 0xFF;	
+					for (uint8_t y1 = 1; y1< scale; y1++) 
+					for (uint8_t x1 = 1; x1< scale; x1++) {
+						uint32_t pixel2 = FrameBuffer[(y*scale+y1)*SCREEN_SIZE + (x*scale+x1)];
+						bmpPixel.R = (((pixel2 >> 16) & 0xFF)+bmpPixel.R)>>1;
+						bmpPixel.G = (((pixel2 >> 8) & 0xFF)+bmpPixel.G)>>1;
+						bmpPixel.B = (((pixel2 >> 0) & 0xFF)+bmpPixel.B)>>1;	
+					}
+					temp_save_state->image->rawData.push_back(bmpPixel);
+				}
+				x_offset_save_state = x_offset;
+				stable_position_save_state = stable_position;
+				temp_save_state->state = new State();
+				NES.SaveState(temp_save_state->state);
+				NES.RejectCartridge();
+				delete CART;
+				CART = nullptr;
+				currentSelect = gamelist; // exit;
+				return;
+			}
 			NES.CPU.controller[0] = controller;
 			uint8_t SkeepBuffer = (int)(1789773.0/(SoundSamplesPerSec>>1)) * ((double)FPS/59.5f);
 			uint16_t totalCount = audioBufferCount;
@@ -885,45 +1164,14 @@ printf("DEBUG: %s.\n", "Playing always sound clock");
 			if (clock_counter < 476490) memset(FrameBuffer, 0x00, SCREEN_SIZE * 240 << 2); //Костыль, чтобы не моргал экран при загрузке
 			MixArray(audiosample, tempsample, audioBufferCount);
 		}
-		if (controller&0x10 && controller&0x20) {
-			temp_save_state = new SavePoint();
-			temp_save_state->time_shtamp = clock_counter / 1789773;
-			temp_save_state->id = courusel[sel]->id;
-			temp_save_state->image = new Image();
-			temp_save_state->image->width = 32;
-			temp_save_state->image->height = 24;
-			temp_save_state->image->x = 8;
-			temp_save_state->image->y = 4;
-			uint8_t scale = SCREEN_SIZE / temp_save_state->image->width;
-			for (uint8_t y = 0; y< temp_save_state->image->height; y++)
-			for (uint8_t x = 0; x< temp_save_state->image->width; x++) { 
-				BmpPixel bmpPixel;
-				uint32_t pixel1 = FrameBuffer[(y*SCREEN_SIZE + x)*scale];
-				bmpPixel.R = (pixel1 >> 16) & 0xFF;
-				bmpPixel.G = (pixel1 >> 8) & 0xFF;
-				bmpPixel.B = (pixel1 >> 0) & 0xFF;	
-				for (uint8_t y1 = 1; y1< scale; y1++) 
-				for (uint8_t x1 = 1; x1< scale; x1++) {
-					uint32_t pixel2 = FrameBuffer[(y*scale+y1)*SCREEN_SIZE + (x*scale+x1)];
-					bmpPixel.R = (((pixel2 >> 16) & 0xFF)+bmpPixel.R)>>1;
-					bmpPixel.G = (((pixel2 >> 8) & 0xFF)+bmpPixel.G)>>1;
-					bmpPixel.B = (((pixel2 >> 0) & 0xFF)+bmpPixel.B)>>1;	
-				}
-				temp_save_state->image->rawData.push_back(bmpPixel);
-			}
-			x_offset_save_state = x_offset;
-			stable_position_save_state = stable_position;
-			NES.RejectCartridge();
-			delete CART;
-			CART = nullptr;
-			currentSelect = gamelist; // exit;
-		}
 		return;
 	}
 	if (currentSelect == preparegame && fadeProcents == 100 && !temp_save_state) {
+		#ifdef INFO
+		printf("INFO: %s.\n", "Play game");
+		#endif
 		memset(FrameBuffer, 0x00, SCREEN_SIZE * 240 << 2);
 		currentSelect = playgame;
-		clock_counter = 0;
 		return;
 	} 
 	counter++;
@@ -956,10 +1204,11 @@ printf("DEBUG: %s.\n", "Clear OAM");
 #ifdef DEBUG
 printf("DEBUG: %s.\n", "Update controller action");
 #endif
+//if (counter%20==0) lastkbState = 0x00;
 		if (controller&0x01) {
 			switch (currentSelect) {
 				case menu:
-					if (!(lastkbState&0x01) || counter%10==0 )
+					if (!(lastkbState&0x01)/* || counter%10==0 */)
 					if (select_menu_position == select_to_menu_position) {
 						select_to_menu_position += 4;
 						if (select_to_menu_position > 12) select_to_menu_position = 12;
@@ -977,15 +1226,15 @@ printf("DEBUG: %s.\n", "Update controller action");
 					}
 				break;
 				case saves:
-					if (!(lastkbState&0x01) || counter%20==0) {
+					if (!(lastkbState&0x01)/* || counter%20==0*/) {
 						if (temp_save_state && courusel[sel]->id == temp_save_state->id) {
-							if (select_save_state < 3) {
+							if (select_save_state >=0 && select_save_state < maxSaveState) {
 								select_save_state++;
 								PlayWav(se_sys_cursor);
 							}
 						} else {
-							if (select_save_state+1 < 4)
-							for (uint8_t i = select_save_state+1; i < 4; i++) {
+							if (select_save_state >= 0 && select_save_state+1 <= maxSaveState)
+							for (uint8_t i = select_save_state+1; i <= maxSaveState; i++) {
 								if (courusel[sel]->savePointList[i]) {
 									select_to_syspend_panel_selector = 6 + 8*i;
 									select_save_state = i;
@@ -1001,7 +1250,7 @@ printf("DEBUG: %s.\n", "Update controller action");
 		if (controller&0x02) {
 			switch (currentSelect) {
 				case menu:
-					if (!(lastkbState&0x02) || counter%10==0 )
+					if (!(lastkbState&0x02)/* || counter%10==0 */)
 					if (select_menu_position == select_to_menu_position) {
 						select_to_menu_position -= 4;
 						if (select_to_menu_position < 0) select_to_menu_position = 0;
@@ -1020,7 +1269,7 @@ printf("DEBUG: %s.\n", "Update controller action");
 					}
 				break;
 				case saves:
-					if (!(lastkbState&0x02) || counter%20==0) {
+					if (!(lastkbState&0x02)/* || counter%20==0*/) {
 						if (temp_save_state && courusel[sel]->id == temp_save_state->id) {
 							if (select_save_state > 0) {
 								select_save_state--;
@@ -1061,6 +1310,7 @@ printf("DEBUG: %s.\n", "Update controller action");
 
 		if (controller&0x10&& !(lastkbState&0x10)) {
 			switch (currentSelect) {
+				case saves:
 				case gamelist:
 					PlayWav(se_sys_click_game);
 					if (CART) {NES.RejectCartridge(); delete CART; CART = nullptr;}
@@ -1072,13 +1322,29 @@ printf("DEBUG: %s.\n", "Update controller action");
 					};
 					NES.ConnectCartridge(CART);
 					memset(FrameBuffer, 0x00, SCREEN_SIZE * 240 << 2);
+					clock_counter = 0;
 					NES.PPU.setFrameBuffer(FrameBuffer);
-					NES.PPU.setScale(SCREEN_SIZE, TBL_WIDTH<40?0:disaplayScale);
+					NES.PPU.setScale(SCREEN_SIZE, setting.disaplayScale);
 					NES.Reset();
+					
+
 					if (temp_save_state) {
-						select_save_state = -1;
-						PlayWav(se_sys_smoke);
-					}
+						if (temp_save_state->id == courusel[sel]->id && currentSelect == saves) {
+							clock_counter = temp_save_state->time_shtamp * 1789773;
+							NES.LoadState(temp_save_state->state);
+							if (deleteSavePoint(temp_save_state)) temp_save_state = nullptr;
+							select_save_state = 0;
+						} else {
+							select_save_state = -1;
+							PlayWav(se_sys_smoke);
+						}
+					} else if (currentSelect == saves) {
+						if (courusel[sel]->savePointList[select_save_state]) {
+							clock_counter = courusel[sel]->savePointList[select_save_state]->time_shtamp * 1789773;
+							NES.LoadState(courusel[sel]->savePointList[select_save_state]->state);
+						}
+					}	
+
 					currentSelect = preparegame;
 				break;
 			}
@@ -1098,8 +1364,17 @@ printf("DEBUG: %s.\n", "Update controller action");
 				}
 			switch (currentSelect) {
 				case menu:	
-				case saves: currentSelect = gamelist; PlayWav(se_sys_cancel); break;
-				case displaySettings: currentSelect = menu;	PlayWav(se_sys_cancel);	break;
+				case saves:
+						if (temp_save_state && temp_save_state->id == courusel[sel]->id) {
+							select_save_state = -1;
+							PlayWav(se_sys_smoke);
+							SaveSaves();
+							break;
+						} 
+						currentSelect = gamelist;
+						PlayWav(se_sys_cancel);
+						break;
+				case displaySettings: SaveSettings(); currentSelect = menu;	PlayWav(se_sys_cancel);	break;
 			}
 		}
 		if (controller&0x80 && !(lastkbState&0x80)) {
@@ -1109,22 +1384,21 @@ printf("DEBUG: %s.\n", "Update controller action");
 					PlayWav(se_sys_click);
 				break;
 				case displaySettings:
-					disaplayScale = displaySettingSelector;
+					setting.disaplayScale = displaySettingSelector;
 					PlayWav(se_sys_click);
 				break;
 				case saves:
 					if (temp_save_state && courusel[sel]->id == temp_save_state->id) {
 						if (courusel[sel]->savePointList[select_save_state]) {
-							delete courusel[sel]->savePointList[select_save_state]->image;
-							courusel[sel]->savePointList[select_save_state]->image = nullptr;
-							delete courusel[sel]->savePointList[select_save_state];
-							courusel[sel]->savePointList[select_save_state] = nullptr;
+							if (deleteSavePoint(courusel[sel]->savePointList[select_save_state])) 
+								courusel[sel]->savePointList[select_save_state] = nullptr;
 						}
 						courusel[sel]->savePointList[select_save_state] = temp_save_state;
 						stable_position_syspend_panel_selector = 6 + 8 * select_save_state;
 						select_to_syspend_panel_selector = stable_position_syspend_panel_selector;
 						temp_save_state = nullptr;
 						no_select_state = false;
+						SaveSaves();
 						PlayWav(se_sys_click);
 					}
 				break;
@@ -1142,17 +1416,20 @@ printf("DEBUG: %s.\n", "Update controller action");
 				if (select_to == stable_position) {
 					if (courusel[sel]) {
 						currentSelect = saves;
-						if (!courusel[sel]->savePointList[select_save_state]){
-							no_select_state = true;
-							for (uint8_t i = 0; i < 4; i++) {
-								if (courusel[sel]->savePointList[i]) {
-									select_to_syspend_panel_selector = 6 + 8*i;
-									select_save_state = i;
-									no_select_state = false;
-									break;
+						no_select_state = false;
+						if (select_save_state>=0 && select_save_state<=maxSaveState) {
+							if (!courusel[sel]->savePointList[select_save_state]){
+								no_select_state = true;
+								for (uint8_t i = 0; i <= maxSaveState; i++) {
+									if (courusel[sel]->savePointList[i]) {
+										select_to_syspend_panel_selector = 6 + 8*i;
+										select_save_state = i;
+										no_select_state = false;
+										break;
+									}
 								}
-							}
-						} else no_select_state = false;
+							} 
+						}	
 					}
 				}
 			}
@@ -1171,10 +1448,16 @@ printf("DEBUG: %s.\n", "Draw UI");
 #endif
 
 	if (currentSelect == displaySettings) {
+		#ifdef DEBUG 
+		printf("DEBUG: %s.\n", "displaySettings");
+		#endif
 		memset(&tblAttribute[0], 0x07, TBL_SIZE);
 		drawSettingsDisplayPanel(counter%10);
 		drawHintBar(currentSelect);
 	} else {
+		#ifdef DEBUG 
+		printf("DEBUG: %s.\n", "other Drae");
+		#endif
 		memset(&tblAttribute[0], 0x17, TBL_SIZE);
 		drawTopBar();
 		drawMenu();
@@ -1182,17 +1465,34 @@ printf("DEBUG: %s.\n", "Draw UI");
 			drawTitleBar(4, 4, TBL_WIDTH-8);
 			drawCourusel(7, counter%1);
 			drawSavesPanel();
+			#ifdef DEBUG 
+			printf("DEBUG: %s.\n", "if tempsave drawTempSaveState");
+			#endif
 			if (temp_save_state && courusel[sel]->id == temp_save_state->id) drawTempSaveState(counter);
 		} else {
+			#ifdef DEBUG 
+			printf("DEBUG: %s.\n", "game and prepare");
+			#endif
 			drawDownBar();
 			drawTitleBar(4, 6, TBL_WIDTH-8);
 			drawCourusel(9, counter%1);
 			drawNavigate(counter%10);
+			#ifdef DEBUG 
+			printf("DEBUG: %s.\n", "drawTempSaveState");
+			#endif
 			drawTempSaveState(counter);
 		}
+		#ifdef DEBUG 
+		printf("DEBUG: %s.\n", "drawSelector");
+		#endif
 		drawSelector(currentSelect);
 		drawHintBar(currentSelect);
 	}
+
+#ifdef DEBUG 
+printf("DEBUG: %s.\n", "RenderFrameBuffer");
+#endif
+
 	renderFrameBuffer();
 	if (currentSelect == preparegame) {
 		if (fadeProcents<100) fadeProcents+=10;
@@ -1201,6 +1501,10 @@ printf("DEBUG: %s.\n", "Draw UI");
 		if (fadeProcents>0) fadeProcents-=10;
 		if (fadeProcents<0) fadeProcents=0;
 	}
+
+#ifdef DEBUG 
+printf("DEBUG: %s.\n", "Update Complete");
+#endif
 }
 
 void Shell::setJoyState(uint8_t kb) {
