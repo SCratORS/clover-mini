@@ -1,14 +1,18 @@
 /*----TO-DO list----*/
 /* Меню настроек */
-/* Меню о игре */
 /* Меню QR кода */
 /* Замена BMP на PNG */
+/* Утечка памяти при выходе из эмулятора, память не доконца очищается */
+/* Глюк отображния времени на точке сохранения если играть более 20 минут */
+/* Сортировка списка игр */
+/* На карточке игры должна рисоваться маленькая пиктограмма если есть временное сохранение */ 
 
 #include "Shell.h"
 #include <cstdio>
 #include <string>
 #include <iostream>
 #include <filesystem>
+#include <algorithm>
 
 /*
 uint16_t RGB888ToRGB565( uint32_t color )
@@ -23,6 +27,8 @@ namespace fs = std::filesystem;
 uint8_t sp_index = 0;
 uint64_t clock_counter;
 uint16_t sel = 0;
+uint16_t game_count = 0;
+uint8_t sortType = 0;
 
 bool Shell::loadWav(WavFile * wavFile, const char* fname) {
 	#ifdef INFO
@@ -299,8 +305,37 @@ bool Shell::LoadData() {
 	 				Card->path = entry.path().string();
 					std::string icon = reader.Get("Desktop Entry", "Icon", "");
 					Card->exec = reader.Get("Desktop Entry", "Exec", "");
-					Card->name = reader.Get("Desktop Entry", "Name", "Unknown");
-					Card->date = reader.Get("X-CLOVER Game", "ReleaseDate", "1970-01-01");
+
+					Card->name = reader.Get("Desktop Entry", "Name", "");
+					if (Card->name.length()==0) Card->name = "Unknown";
+
+					if (Card->name.length() > TBL_WIDTH - 10) {
+						uint16_t l = (Card->name.length() - (TBL_WIDTH - 10));
+						Card->name.erase(Card->name.length() - l - 3, l + 3);
+						Card->name += "...";
+					}
+
+					Card->text = reader.Get("Description", "Text", "");
+					if (Card->text.length()==0) Card->text = "No description";
+
+					Card->date = reader.Get("X-CLOVER Game", "ReleaseDate", "");
+					if (Card->date.length()==0) Card->date = "1970-01-01";
+
+					Card->SortRawPublisher = reader.Get("X-CLOVER Game", "SortRawPublisher", "");
+					if (Card->SortRawPublisher.length()==0) Card->SortRawPublisher = "Unknown";
+
+					Card->SortRawTitle = reader.Get("X-CLOVER Game", "SortRawTitle", "");
+					if (Card->SortRawTitle.length()==0) Card->SortRawTitle = "Unknown";
+
+					Card->copyright = reader.Get("X-CLOVER Game", "Copyright", "");
+					if (Card->copyright.length()==0) Card->copyright = "Unknown copyright";
+
+					if (Card->copyright.length() > TBL_WIDTH - 4) {
+						uint16_t l = (Card->copyright.length() - (TBL_WIDTH - 4));
+						Card->copyright.erase(Card->copyright.length() - l - 3, l + 3);
+						Card->copyright += "...";
+					}
+
 					Card->players = reader.GetInteger("X-CLOVER Game", "Players", 1);
 					Card->simultaneous = reader.GetInteger("X-CLOVER Game", "Simultaneous", 0);
 
@@ -337,25 +372,14 @@ bool Shell::LoadData() {
 					navigate.push_back(NavCard); 
 	 			}
 
-	uint16_t size = courusel.size();
- 	if (size > 0 && size * 10 <= TBL_WIDTH ) {
-	 	uint16_t count = TBL_WIDTH / (size*10);
-	 	for (uint16_t i = 0; i < count; i++ ) {
-	 		for (uint16_t c = 0; c < size; c++ ) {
-	 			card * Card = new card;
-	 			Card->pSelect = courusel[c]->pSelect;
-	 			Card->image = courusel[c]->image;
-	 			Card->exec = courusel[c]->exec;
-	 			Card->name = courusel[c]->name;
-	 			Card->date = courusel[c]->date;
-	 			Card->players = courusel[c]->players;
-	 			Card->simultaneous = courusel[c]->simultaneous;
-	 			courusel.push_back(Card);
-	 		}
-	 	}
+	game_count = courusel.size();
+ 	if (game_count > 0 && game_count * 10 <= TBL_WIDTH ) {
+	 	uint16_t count = TBL_WIDTH / (game_count*10);
+	 	game_count *= count+1;
  	}
- 	navigate_offset = (SCREEN_SIZE - max_length_navbar) << 1;
+ 	navigate_offset = (SCREEN_SIZE - max_length_navbar) >> 1;
  	if (courusel.size() == 0) currentSelect = empty;
+ 	//else std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->SortRawTitle<((card*)r)->SortRawTitle;});
  	FILE* fp = fopen(table_sprites, "rb");
     if (!fp) return false;
     fread(&pallete[0], 0x200, 1, fp);
@@ -364,7 +388,6 @@ bool Shell::LoadData() {
 	return true;
 }
 
-
 uint8_t l_y = 7;
 void Shell::drawCourusel(uint8_t y, uint8_t counter) {
 	#ifdef DEBUG 
@@ -372,14 +395,15 @@ void Shell::drawCourusel(uint8_t y, uint8_t counter) {
 	#endif
 	uint8_t h = 10;
 	uint8_t w = 10;
-	max_length = courusel.size() * (w + 1);
+	max_length = game_count * (w + 1);
 	if (max_length < TBL_WIDTH+w+1) max_length = TBL_WIDTH+w+1;
 	if (counter == 0) x_offset = (courusel_direction==0?x_offset:(courusel_direction<0?--x_offset:++x_offset))%max_length;
 	int16_t x = x_offset;
-	for (uint8_t i = 0; i < courusel.size(); i++) {
+	for (uint16_t ci = 0; ci < game_count; ci++) {
+		uint16_t i = ci%courusel.size();
 		courusel[i]->x_pos = ((i*(w+1)) + x) << 3;
 		courusel[i]->y_pos = y << 3;
-		int16_t bxs = (i*(w+1)) + x;
+		int16_t bxs = (ci*(w+1)) + x;
 		int16_t bs = bxs;
 		if (bs < 0) bs += max_length;
 		else if (bs > max_length-1) bs -= max_length;
@@ -388,11 +412,6 @@ void Shell::drawCourusel(uint8_t y, uint8_t counter) {
 		* courusel[i]->pSelect = false;
 		if (courusel[i]->select) {
 			sel = i;
-			if (courusel[i]->name.length() > TBL_WIDTH - 10) {
-				uint16_t l = (courusel[i]->name.length() - (TBL_WIDTH - 10));
-				courusel[i]->name.erase(courusel[i]->name.length() - l - 3, l + 3);
-				courusel[i]->name += "...";
-			}
 			uint16_t offset_name = ((TBL_WIDTH - courusel[i]->name.length() - 10) >> 1) + 5;
 			memcpy(&tblName[(l_y+1)*TBL_WIDTH+offset_name], courusel[i]->name.c_str(), courusel[i]->name.length());
 			memset(&tblAttribute[(l_y+1)*TBL_WIDTH+offset_name], 0x37, courusel[i]->name.length());
@@ -425,15 +444,16 @@ void Shell::drawNavigate(uint8_t counter) {
 	printf("DEBUG: %s.\n", "drawNavigate");
 	#endif
 	if (!(currentSelect == gamelist || currentSelect == menu || currentSelect == preparegame)) return;
+	uint16_t nav_sel = sel/*%game_count*/;
 	if (!counter) cursor = (++cursor)%3;
 	if (max_length_navbar > SCREEN_SIZE-4) {
-		navigate_offset = 0 - ((float)(max_length_navbar - SCREEN_SIZE + 4 ) / navigate.size()) * sel;		
-		int16_t length_offset = navigate[sel]->x_pos + navigate_offset + navigate[sel]->image->width+1;		
+		navigate_offset = 0 - ((float)(max_length_navbar - SCREEN_SIZE + 4 ) / navigate.size()) * nav_sel;		
+		int16_t length_offset = navigate[nav_sel]->x_pos + navigate_offset + navigate[nav_sel]->image->width+1;		
 		if (length_offset > SCREEN_SIZE-2)
 		navigate_offset -= length_offset - SCREEN_SIZE  + 2;
 	}
-	current_pos_x = navigate[sel]->x_pos + navigate_offset + (navigate[sel]->image->width >> 1) - 8;
-	current_pos_y = navigate[sel]->y_pos;
+	current_pos_x = navigate[nav_sel]->x_pos + navigate_offset + (navigate[nav_sel]->image->width >> 1) - 8;
+	current_pos_y = navigate[nav_sel]->y_pos;
 	for (uint8_t i = 0; i<2; i++) drawSprite(0x0A + cursor, current_pos_x + (i<<3), current_pos_y - 8, !i?0x82:0x02);
 }
 
@@ -741,7 +761,7 @@ void Shell::drawSaveState(uint8_t ndx, uint8_t xt, uint8_t yt) {
 	}
 }
 
-void Shell::drawSettingsDisplayContent(uint8_t counter) {
+void Shell::drawDisplayContent(uint8_t counter) {
 
 	for (uint8_t i = 0; i<5; i++)
 	memset(&tblAttribute[(i+8+6*displaySettingSelector)*TBL_WIDTH + 8], 0x1A, TBL_WIDTH-16);
@@ -765,7 +785,58 @@ void Shell::drawSettingsDisplayContent(uint8_t counter) {
 	}
 }
 
-void Shell::drawSettingsDisplayPanel(uint8_t counter) {	
+void Shell::drawOptionsContent(uint8_t counter) {
+
+}
+
+uint8_t scroll = 0;
+bool scroll_end = false;
+void Shell::drawAboutContent(uint8_t counter) {
+	memcpy(&tblName[6*TBL_WIDTH + 2], courusel[sel]->copyright.c_str(), courusel[sel]->copyright.length());
+	memset(&tblAttribute[6*TBL_WIDTH + 2], 0x27, courusel[sel]->copyright.length());
+
+	memcpy(&tblName[7*TBL_WIDTH + 2], courusel[sel]->date.c_str(), courusel[sel]->date.length());
+	memset(&tblAttribute[7*TBL_WIDTH + 2], 0x27, courusel[sel]->date.length());
+
+	uint16_t start_position = 0;
+	uint16_t end_position = TBL_WIDTH-4;
+	std::string text = "";
+	uint8_t scroll_count = 0;
+	scroll_end = false;
+	for (uint8_t i = 0; i < 19; i++) {
+		do {
+			if (courusel[sel]->text.length() - start_position >= TBL_WIDTH-4) text = courusel[sel]->text.substr(start_position,  TBL_WIDTH-4);
+			else {
+				end_position = courusel[sel]->text.length();
+				text = courusel[sel]->text.substr(start_position,  courusel[sel]->text.length() - start_position);
+			}	
+
+			start_position = end_position;
+			
+			if (end_position < courusel[sel]->text.length()) {
+				if (courusel[sel]->text[end_position] != ' ') {
+					while (courusel[sel]->text[start_position] != ' ' && text.length() > (end_position - start_position)) start_position--;
+				}
+				text = text.substr(0, text.length() - (end_position - start_position));
+			} else { scroll_end = true; break; }
+
+			do {
+				start_position += 1; 
+			} while (courusel[sel]->text[start_position] == ' ');
+			end_position = start_position + (TBL_WIDTH-4);
+
+		} while (scroll > scroll_count++ && end_position <= courusel[sel]->text.length());
+		memcpy(&tblName[(i+9)*TBL_WIDTH + 2], text.c_str(), text.length());
+		memset(&tblAttribute[(i+9)*TBL_WIDTH + 2], 0x27, text.length());
+		if (scroll_end) break;
+	}
+}
+
+void Shell::drawManualsContent(uint8_t counter) {
+
+}
+
+void Shell::drawPanel(){
 	for (uint8_t i = 0; i < 30; i++) {
 		switch (i) {
 			case 0: 	tblName[i * TBL_WIDTH + 0] = 0x94;
@@ -789,11 +860,42 @@ void Shell::drawSettingsDisplayPanel(uint8_t counter) {
 			break;
 		}
 	}
+}
+
+void Shell::drawManualsPanel(uint8_t counter) {	
+	drawPanel();
+	drawSprite(0x69, 11, 8, 0x0B, 3);
+	memcpy(&tblName[(TBL_WIDTH<<1) + 5], "Manuals", 7);
+	memset(&tblAttribute[(TBL_WIDTH<<1) + 5], 0x27, 7);
+	drawManualsContent(counter);
+}
+
+void Shell::drawAboutPanel(uint8_t counter) {	
+	drawPanel();
+	drawSprite(0x66, 11, 8, 0x07, 3);
+	memcpy(&tblName[(TBL_WIDTH<<1) + 5], "About", 5);
+	memset(&tblAttribute[(TBL_WIDTH<<1) + 5], 0x27, 5);
+	drawAboutContent(counter);
+}
+
+void Shell::drawDisplayPanel(uint8_t counter) {	
+	drawPanel();
 	drawSprite(0x60, 11, 8, 0x07, 3);
 	memcpy(&tblName[(TBL_WIDTH<<1) + 5], "Display", 7);
 	memset(&tblAttribute[(TBL_WIDTH<<1) + 5], 0x27, 7);
-	drawSettingsDisplayContent(counter);
+	drawDisplayContent(counter);
 }
+
+void Shell::drawOptionsPanel(uint8_t counter) {	
+	drawPanel();
+	drawSprite(0x63, 11, 8, 0x07, 3);
+	memcpy(&tblName[(TBL_WIDTH<<1) + 5], "Options", 7);
+	memset(&tblAttribute[(TBL_WIDTH<<1) + 5], 0x27, 7);
+	drawOptionsContent(counter);
+}
+
+
+
 
 void Shell::drawTitleBar(uint8_t x, uint8_t y, uint8_t l) {
 	#ifdef DEBUG 
@@ -924,7 +1026,7 @@ void Shell::drawHintBar(selectors mode) {
 				memset(&tblAttribute[27*TBL_WIDTH+offset], 0x2F, 4);
 			}
 		break;
-		case displaySettings:
+		case display:
 				offset = TBL_WIDTH - 1 - 18;
 				tblName[2*TBL_WIDTH+offset] = 0xA6;
 				offset+=1;
@@ -940,6 +1042,42 @@ void Shell::drawHintBar(selectors mode) {
 				offset+=1;
 				memcpy(&tblName[2*TBL_WIDTH+offset], "OK", 2);
 				memset(&tblAttribute[2*TBL_WIDTH+offset], 0x27, 2);
+		break;
+		case options:
+				offset = TBL_WIDTH - 1 - 18;
+				tblName[2*TBL_WIDTH+offset] = 0xA6;
+				offset+=1;
+				memcpy(&tblName[2*TBL_WIDTH+offset], "Select", 6);
+				memset(&tblAttribute[2*TBL_WIDTH+offset], 0x27, 6);
+				offset+=7;
+				tblName[2*TBL_WIDTH+offset] = 0x98;
+				offset+=1;
+				memcpy(&tblName[2*TBL_WIDTH+offset], "Back", 4);
+				memset(&tblAttribute[2*TBL_WIDTH+offset], 0x27, 4);
+				offset+=5;
+				tblName[2*TBL_WIDTH+offset] = 0x97;
+				offset+=1;
+				memcpy(&tblName[2*TBL_WIDTH+offset], "OK", 2);
+				memset(&tblAttribute[2*TBL_WIDTH+offset], 0x27, 2);
+		break;
+		case about:
+				offset = TBL_WIDTH - 1 - 14;
+				tblName[2*TBL_WIDTH+offset] = 0xA6;
+				offset+=1;
+				memcpy(&tblName[2*TBL_WIDTH+offset], "Scroll", 6);
+				memset(&tblAttribute[2*TBL_WIDTH+offset], 0x27, 6);
+				offset+=7;
+				tblName[2*TBL_WIDTH+offset] = 0x98;
+				offset+=1;
+				memcpy(&tblName[2*TBL_WIDTH+offset], "Back", 4);
+				memset(&tblAttribute[2*TBL_WIDTH+offset], 0x27, 4);
+		break;
+		case manuals:
+				offset = TBL_WIDTH - 1 - 6;
+				tblName[2*TBL_WIDTH+offset] = 0x98;
+				offset+=1;
+				memcpy(&tblName[2*TBL_WIDTH+offset], "Back", 4);
+				memset(&tblAttribute[2*TBL_WIDTH+offset], 0x27, 4);
 		break;
 	}
 }
@@ -1205,7 +1343,7 @@ printf("DEBUG: %s.\n", "Clear OAM");
 printf("DEBUG: %s.\n", "Update controller action");
 #endif
 //if (counter%20==0) lastkbState = 0x00;
-		if (controller&0x01) {
+/*right*/if (controller&0x01) {
 			switch (currentSelect) {
 				case menu:
 					if (!(lastkbState&0x01)/* || counter%10==0 */)
@@ -1247,7 +1385,7 @@ printf("DEBUG: %s.\n", "Update controller action");
 				break;
 			}
 		}
-		if (controller&0x02) {
+/*left*/if (controller&0x02) {
 			switch (currentSelect) {
 				case menu:
 					if (!(lastkbState&0x02)/* || counter%10==0 */)
@@ -1291,7 +1429,7 @@ printf("DEBUG: %s.\n", "Update controller action");
 			}
 		}
 
-		if (controller&0x20&& !(lastkbState&0x20)) {
+/*select*/if (controller&0x20&& !(lastkbState&0x20)) {
 			switch (currentSelect) {
 				case saves:
 					if (!temp_save_state) {
@@ -1304,11 +1442,19 @@ printf("DEBUG: %s.\n", "Update controller action");
 						}
 					}
 				break;
+				case gamelist:
+					switch (sortType = (++sortType)%4) {
+						case 0: std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->SortRawTitle<((card*)r)->SortRawTitle;}); break;
+						case 1: std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->players<((card*)r)->players;}); break;
+						case 2: std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->date<((card*)r)->date;}); break;				
+						case 3: std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->SortRawPublisher<((card*)r)->SortRawPublisher;}); break;
+					} 
+				break;
 			}
 		}
 
 
-		if (controller&0x10&& !(lastkbState&0x10)) {
+/*start*/if (controller&0x10&& !(lastkbState&0x10)) {
 			switch (currentSelect) {
 				case saves:
 				case gamelist:
@@ -1325,9 +1471,7 @@ printf("DEBUG: %s.\n", "Update controller action");
 					clock_counter = 0;
 					NES.PPU.setFrameBuffer(FrameBuffer);
 					NES.PPU.setScale(SCREEN_SIZE, setting.disaplayScale);
-					NES.Reset();
-					
-
+					NES.Reset();					
 					if (temp_save_state) {
 						if (temp_save_state->id == courusel[sel]->id && currentSelect == saves) {
 							clock_counter = temp_save_state->time_shtamp * 1789773;
@@ -1344,12 +1488,11 @@ printf("DEBUG: %s.\n", "Update controller action");
 							NES.LoadState(courusel[sel]->savePointList[select_save_state]->state);
 						}
 					}	
-
 					currentSelect = preparegame;
 				break;
 			}
 		}
-		if (controller&0x40&& !(lastkbState&0x40)) {
+/* B  */if (controller&0x40&& !(lastkbState&0x40)) {
 			if (currentSelect == gamelist)
 				if (temp_save_state && courusel[sel]->id != temp_save_state->id) {
 					for (uint8_t i = 0; i < courusel.size(); i++) {
@@ -1374,19 +1517,35 @@ printf("DEBUG: %s.\n", "Update controller action");
 						currentSelect = gamelist;
 						PlayWav(se_sys_cancel);
 						break;
-				case displaySettings: SaveSettings(); currentSelect = menu;	PlayWav(se_sys_cancel);	break;
+				case display: SaveSettings(); currentSelect = menu;	PlayWav(se_sys_cancel);	break;
+				case options: SaveSettings(); currentSelect = menu;	PlayWav(se_sys_cancel);	break;
+				case about: currentSelect = menu;	PlayWav(se_sys_cancel);	break;
+				case manuals: currentSelect = menu;	PlayWav(se_sys_cancel);	break;
 			}
 		}
-		if (controller&0x80 && !(lastkbState&0x80)) {
+/* A  */if (controller&0x80 && !(lastkbState&0x80)) {
 			switch (currentSelect) {
 				case menu:
-					if (select_to_menu_position == 0) currentSelect = displaySettings;
+					switch (select_to_menu_position>>2) {
+						case 0: currentSelect = display; break;
+						case 1: currentSelect = options; break;
+						case 2: currentSelect = about; scroll = 0; break;
+						case 3: currentSelect = manuals; break;
+					}
 					PlayWav(se_sys_click);
 				break;
-				case displaySettings:
+
+				case display:
 					setting.disaplayScale = displaySettingSelector;
 					PlayWav(se_sys_click);
 				break;
+
+				case options:
+					PlayWav(se_sys_click);
+				break;
+		
+				case about: break;
+				case manuals: break;
 				case saves:
 					if (temp_save_state && courusel[sel]->id == temp_save_state->id) {
 						if (courusel[sel]->savePointList[select_save_state]) {
@@ -1404,37 +1563,51 @@ printf("DEBUG: %s.\n", "Update controller action");
 				break;
 			}
 		}
-		if (controller&0x08 && !(lastkbState&0x08)) {
-			if ((currentSelect == gamelist)||(currentSelect == empty)) currentSelect = menu;
-			else if (currentSelect == saves) currentSelect = gamelist;
-			else if (currentSelect == displaySettings) displaySettingSelector = --displaySettingSelector<0?2:displaySettingSelector;
-			if (currentSelect != playgame) PlayWav(se_sys_cursor);
-		}
-		if (controller&0x04 && !(lastkbState&0x04)) {
-			if (currentSelect == menu) currentSelect = currentSelect = courusel.size()==0?empty:gamelist;
-			else if (currentSelect == gamelist) {
-				if (select_to == stable_position) {
-					if (courusel[sel]) {
-						currentSelect = saves;
-						no_select_state = false;
-						if (select_save_state>=0 && select_save_state<=maxSaveState) {
-							if (!courusel[sel]->savePointList[select_save_state]){
-								no_select_state = true;
-								for (uint8_t i = 0; i <= maxSaveState; i++) {
-									if (courusel[sel]->savePointList[i]) {
-										select_to_syspend_panel_selector = 6 + 8*i;
-										select_save_state = i;
-										no_select_state = false;
-										break;
-									}
-								}
-							} 
-						}	
-					}
-				}
+/* up */if (controller&0x08 && !(lastkbState&0x08)) {
+			switch (currentSelect) {
+				case empty:
+				case gamelist: currentSelect = menu;  PlayWav(se_sys_cursor); break;
+				case saves: currentSelect = gamelist; PlayWav(se_sys_cursor); break;
+				case display: displaySettingSelector = --displaySettingSelector<0?2:displaySettingSelector; PlayWav(se_sys_cursor); break;
+				case options: PlayWav(se_sys_cursor); break;
+				case about: if (scroll) { scroll--; PlayWav(se_sys_cursor);} break;
 			}
-			else if (currentSelect == displaySettings) displaySettingSelector = ++displaySettingSelector%3;
-			if (currentSelect != playgame) PlayWav(se_sys_cursor);
+		}
+/*down*/if (controller&0x04 && !(lastkbState&0x04)) {
+			switch (currentSelect) {
+				case menu: 	
+					currentSelect = courusel.size()==0?empty:gamelist; 
+					PlayWav(se_sys_cursor); 
+				break;
+				case gamelist:
+					if (select_to == stable_position) {
+						if (courusel[sel]) {
+							currentSelect = saves;
+							no_select_state = false;
+							if (select_save_state>=0 && select_save_state<=maxSaveState) {
+								if (!courusel[sel]->savePointList[select_save_state]){
+									no_select_state = true;
+									for (uint8_t i = 0; i <= maxSaveState; i++) {
+										if (courusel[sel]->savePointList[i]) {
+											select_to_syspend_panel_selector = 6 + 8*i;
+											select_save_state = i;
+											no_select_state = false;
+											break;
+										}
+									}
+								} 
+							}	
+						}
+					}
+					PlayWav(se_sys_cursor);
+				break;
+				case display:
+					displaySettingSelector = ++displaySettingSelector%3;
+					PlayWav(se_sys_cursor);
+				break;
+				case options: PlayWav(se_sys_cursor); break;
+				case about: if (!scroll_end) { scroll++; PlayWav(se_sys_cursor); } break;
+			}
 		}
 	/**********/
 #ifdef DEBUG 
@@ -1447,16 +1620,37 @@ printf("DEBUG: %s.\n", "Clear tblName");
 printf("DEBUG: %s.\n", "Draw UI");
 #endif
 
-	if (currentSelect == displaySettings) {
+	if (currentSelect == display) {
 		#ifdef DEBUG 
-		printf("DEBUG: %s.\n", "displaySettings");
+		printf("DEBUG: %s.\n", "Display Settings");
 		#endif
 		memset(&tblAttribute[0], 0x07, TBL_SIZE);
-		drawSettingsDisplayPanel(counter%10);
+		drawDisplayPanel(counter%10);
+		drawHintBar(currentSelect);
+	} else if (currentSelect == options) {
+		#ifdef DEBUG 
+		printf("DEBUG: %s.\n", "System Options");
+		#endif
+		memset(&tblAttribute[0], 0x07, TBL_SIZE);
+		drawOptionsPanel(counter%10);
+		drawHintBar(currentSelect);
+	} else if (currentSelect == about) {
+		#ifdef DEBUG 
+		printf("DEBUG: %s.\n", "Game Description");
+		#endif
+		memset(&tblAttribute[0], 0x07, TBL_SIZE);
+		drawAboutPanel(counter%10);
+		drawHintBar(currentSelect);
+	} else if (currentSelect == manuals) {
+		#ifdef DEBUG 
+		printf("DEBUG: %s.\n", "Manuals");
+		#endif
+		memset(&tblAttribute[0], 0x07, TBL_SIZE);
+		drawManualsPanel(counter%10);
 		drawHintBar(currentSelect);
 	} else {
 		#ifdef DEBUG 
-		printf("DEBUG: %s.\n", "other Drae");
+		printf("DEBUG: %s.\n", "other Draw");
 		#endif
 		memset(&tblAttribute[0], 0x17, TBL_SIZE);
 		drawTopBar();
@@ -1513,15 +1707,6 @@ void Shell::setJoyState(uint8_t kb) {
     #endif
 	lastkbState = controller;
     controller = kb;
-
-//    controller |= kb[27/* X */] ? 0x80 : 0x00;     // A Button
-//    controller |= kb[29/* Z */] ? 0x40 : 0x00;     // B Button
-//    controller |= kb[229 /* RSHIFT */] ? 0x20 : 0x00;     // Select
-//    controller |= kb[40 /* RETURN */] ? 0x10 : 0x00;     // Start
- //   controller |= kb[82 /* UP */] ? 0x08 : 0x00;
- //   controller |= kb[81 /* DOWN */] ? 0x04 : 0x00;
- //   controller |= kb[80 /* LEFT */] ? 0x02 : 0x00;
- //   controller |= kb[79 /* RIGHT*/] ? 0x01 : 0x00;
 }
 
 void Shell::renderFrameBuffer() {
@@ -1549,18 +1734,20 @@ printf("DEBUG: %s.\n", "Render screen");
 	uint32_t txt_color = 0xFF000000; 
 	uint32_t spr_color = 0xFF000000;
 	
-	if (currentSelect != displaySettings) {
-		for (uint16_t i = 0; i < courusel.size(); i++) {
-			int16_t position_x = courusel[i]->x_pos+courusel[i]->image->x;
+	if (currentSelect != display && currentSelect != options && currentSelect != about && currentSelect != manuals) {
+		for (uint16_t i = 0; i < game_count; i++) {
+			uint16_t ndx = i%courusel.size();
+			uint16_t x_additional = (88*courusel.size()) * (i/courusel.size());
+			int16_t position_x = x_additional + courusel[ndx]->x_pos+courusel[ndx]->image->x;
 			if (position_x < - 88) position_x += max_length_pix;
 			else if (position_x > max_length_pix - 88) position_x -= max_length_pix;
-			if (position_x <  0 - courusel[i]->image->width || position_x > SCREEN_SIZE) continue;
-			for (int16_t y = courusel[i]->y_pos+courusel[i]->image->y; y < courusel[i]->y_pos+courusel[i]->image->y+courusel[i]->image->height; y++)
-			for (int16_t x = position_x; x < position_x+courusel[i]->image->width; x++) {
+			if (position_x <  0 - courusel[ndx]->image->width || position_x > SCREEN_SIZE) continue;
+			for (int16_t y = courusel[ndx]->y_pos+courusel[ndx]->image->y; y < courusel[ndx]->y_pos+courusel[ndx]->image->y+courusel[ndx]->image->height; y++)
+			for (int16_t x = position_x; x < position_x+courusel[ndx]->image->width; x++) {
 				if (x >= SCREEN_SIZE) break;
 				if (x < 0) continue;
-				uint32_t pixel = (y - courusel[i]->y_pos-courusel[i]->image->y) * courusel[i]->image->width + (x - position_x); 
-				txt_color = (courusel[i]->image->rawData[pixel].R << 16) | (courusel[i]->image->rawData[pixel].G << 8) | courusel[i]->image->rawData[pixel].B;
+				uint32_t pixel = (y - courusel[ndx]->y_pos-courusel[ndx]->image->y) * courusel[ndx]->image->width + (x - position_x); 
+				txt_color = (courusel[ndx]->image->rawData[pixel].R << 16) | (courusel[ndx]->image->rawData[pixel].G << 8) | courusel[ndx]->image->rawData[pixel].B;
 				PutPixel(x, y, txt_color);
 			}
 		}

@@ -19,7 +19,6 @@ const int16_t HALF_TBL_WIDTH = TBL_WIDTH>>1;
 const int16_t COURUSEL_START = HALF_TBL_WIDTH - 5;
 const uint8_t maxSaveState = SCREEN_SIZE<320?2:3;
 
-
 class Shell {
 	const char * table_sprites = "usr\\share\\clover-ui\\resources\\sprites\\hvc.ppu"; 
 	const char * bgm_boot_snd = "usr\\share\\clover-ui\\resources\\sounds\\bgm_boot.wav";
@@ -32,7 +31,7 @@ class Shell {
 	const char * game_dir = "usr\\share\\games\\nes\\kachikachi";
 
 	private:
-		enum selectors {empty, gamelist, menu, saves, displaySettings, playgame, preparegame};
+		enum selectors {empty, gamelist, menu, saves, display, options, about, manuals, playgame, preparegame};
 		uint32_t counter = 0;
 		
 
@@ -145,6 +144,10 @@ class Shell {
 			std::string exec;
 			std::string name;
 			std::string date;
+			std::string copyright;
+			std::string SortRawPublisher;
+			std::string SortRawTitle;
+			std::string text;
 			uint8_t players;
 			uint8_t simultaneous;
 			Image * image;
@@ -160,7 +163,7 @@ class Shell {
 
 		std::vector<card*> courusel;
 		std::vector<navcard*> navigate;
-
+		
 		int8_t fadeProcents = 0;
 		int8_t courusel_direction = 0;
 		int8_t select_direction = 0;
@@ -191,6 +194,7 @@ class Shell {
 		uint32_t avrColor(uint8_t a, uint8_t b, uint32_t c1, uint32_t c2);
 		void PutPixel(int16_t px,int16_t py, uint32_t color);
 		uint32_t GetPixel(int16_t px,int16_t py);
+		
 		bool deleteSavePoint(SavePoint * savepoint);
 		void SaveSettings();
 		void LoadSettings();
@@ -210,12 +214,19 @@ class Shell {
 		void drawNavigate(uint8_t counter);
 		void drawSelector(selectors mode);
 		void drawHintBar(selectors mode);
-		void drawSettingsDisplayContent(uint8_t counter);
+		void drawPanel();
+		void drawDisplayContent(uint8_t counter);
+		void drawOptionsContent(uint8_t counter);
+		void drawAboutContent(uint8_t counter);
+		void drawManualsContent(uint8_t counter);
 		void renderFrameBuffer();
 		void drawSaveState(uint8_t ndx, uint8_t xt, uint8_t yt);
 		void drawSprite(uint8_t id, int16_t x, int16_t y, uint8_t attribute, uint8_t leng = 1, uint8_t width = 0, uint8_t opacity = 100);
 		void loadBitmap(const char* fname, Image * image);
-		void drawSettingsDisplayPanel(uint8_t counter);
+		void drawDisplayPanel(uint8_t counter);
+		void drawOptionsPanel(uint8_t counter);
+		void drawAboutPanel(uint8_t counter);
+		void drawManualsPanel(uint8_t counter);
 		uint8_t swapBit(uint8_t b);
 		void MixArray(int16_t * a1, int16_t * a2, uint32_t l) {
 			for (uint32_t i = 0; i<l; i++) a1[i] = a1[i]+a2[i];
