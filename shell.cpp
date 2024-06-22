@@ -3,7 +3,6 @@
 /* Меню QR кода */
 /* Замена BMP на PNG */
 /* Утечка памяти при выходе из эмулятора, память не доконца очищается */
-/* Глюк отображния времени на точке сохранения если играть более 20 минут */
 /* Сортировка списка игр */
 /* На карточке игры должна рисоваться маленькая пиктограмма если есть временное сохранение */ 
 
@@ -1239,7 +1238,7 @@ printf("DEBUG: %s.\n", "Playing always sound clock");
 
 	PlayWavClock(se_sys_click_game);
 	PlayWavClock(se_sys_smoke);
-
+/* 1789773 */
 	if (currentSelect == playgame){
 		if (CART) {
 			if (controller&0x10 && controller&0x20) {
@@ -1474,7 +1473,7 @@ printf("DEBUG: %s.\n", "Update controller action");
 					NES.Reset();					
 					if (temp_save_state) {
 						if (temp_save_state->id == courusel[sel]->id && currentSelect == saves) {
-							clock_counter = temp_save_state->time_shtamp * 1789773;
+							clock_counter = (uint64_t) temp_save_state->time_shtamp * 1789773;
 							NES.LoadState(temp_save_state->state);
 							if (deleteSavePoint(temp_save_state)) temp_save_state = nullptr;
 							select_save_state = 0;
@@ -1484,7 +1483,7 @@ printf("DEBUG: %s.\n", "Update controller action");
 						}
 					} else if (currentSelect == saves) {
 						if (courusel[sel]->savePointList[select_save_state]) {
-							clock_counter = courusel[sel]->savePointList[select_save_state]->time_shtamp * 1789773;
+							clock_counter = (uint64_t) courusel[sel]->savePointList[select_save_state]->time_shtamp * 1789773;
 							NES.LoadState(courusel[sel]->savePointList[select_save_state]->state);
 						}
 					}	
