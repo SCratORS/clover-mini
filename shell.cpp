@@ -1,5 +1,4 @@
 /*----TO-DO list----*/
-/* Меню настроек */
 /* Замена BMP на PNG */
 /* Утечка памяти при выходе из эмулятора, память не доконца очищается */
 /* Сортировка списка игр */
@@ -760,21 +759,22 @@ void Shell::drawSaveState(uint8_t ndx, uint8_t xt, uint8_t yt) {
 }
 
 void Shell::drawDisplayContent(uint8_t counter) {
-
+	uint8_t length_items = 22;
+	uint8_t offset = (TBL_WIDTH - length_items) >> 1;
 	for (uint8_t i = 0; i<5; i++)
-	memset(&tblAttribute[(i+8+6*displaySettingSelector)*TBL_WIDTH + 8], 0x1A, TBL_WIDTH-16);
+	memset(&tblAttribute[(i+8+6*displaySettingSelector)*TBL_WIDTH + offset], 0x1A, length_items);
 
-	tblName[10*TBL_WIDTH + HALF_TBL_WIDTH - 7] = setting.disaplayScale == 0?0xA8:0xA7;
-	memcpy(&tblName[10*TBL_WIDTH + HALF_TBL_WIDTH - 5], "CRT filter", 10);
-	memset(&tblAttribute[10*TBL_WIDTH + HALF_TBL_WIDTH - 5], displaySettingSelector==0?0x3A:0x27, 10);
+	tblName[10*TBL_WIDTH + offset + 3 ] = setting.disaplayScale == 0?0xA8:0xA7;
+	memcpy(&tblName[10*TBL_WIDTH + offset + 5], "CRT filter", 10);
+	memset(&tblAttribute[10*TBL_WIDTH + offset + 5], displaySettingSelector==0?0x3A:0x27, 10);
 
-	tblName[16*TBL_WIDTH + HALF_TBL_WIDTH - 7] = setting.disaplayScale == 1?0xA8:0xA7;
-	memcpy(&tblName[16*TBL_WIDTH + HALF_TBL_WIDTH - 5], "4:3", 3);
-	memset(&tblAttribute[16*TBL_WIDTH + HALF_TBL_WIDTH - 5], displaySettingSelector==1?0x3A:0x27, 3);
+	tblName[16*TBL_WIDTH + offset + 3 ] = setting.disaplayScale == 1?0xA8:0xA7;
+	memcpy(&tblName[16*TBL_WIDTH + offset + 5], "4:3", 3);
+	memset(&tblAttribute[16*TBL_WIDTH + offset + 5], displaySettingSelector==1?0x3A:0x27, 3);
 
-	tblName[22*TBL_WIDTH + HALF_TBL_WIDTH - 7] = setting.disaplayScale == 2?0xA8:0xA7;
-	memcpy(&tblName[22*TBL_WIDTH + HALF_TBL_WIDTH - 5], "Pixel Perfect", 13);
-	memset(&tblAttribute[22*TBL_WIDTH + HALF_TBL_WIDTH - 5], displaySettingSelector==2?0x3A:0x27, 13);
+	tblName[22*TBL_WIDTH + offset + 3] = setting.disaplayScale == 2?0xA8:0xA7;
+	memcpy(&tblName[22*TBL_WIDTH + offset + 5], "Pixel Perfect", 13);
+	memset(&tblAttribute[22*TBL_WIDTH + offset + 5], displaySettingSelector==2?0x3A:0x27, 13);
 
 	if (!counter) cursor = (++cursor)%3;
 	for (uint8_t i = 0; i<2; i++) {
@@ -784,7 +784,44 @@ void Shell::drawDisplayContent(uint8_t counter) {
 }
 
 void Shell::drawOptionsContent(uint8_t counter) {
+	uint8_t swtch [2][3] = {{0xAA,0xAB,0xAC},{0xBC,0xBB,0xBA}};
+	uint8_t swtch_mask [2][4][3] = {{{0x1B,0x1B,0x1B},{0x5B,0x5B,0x5B},{0xCB,0xCB,0xCB},{0x8B,0x8B,0x8B}},{{0x1A,0x1A,0x1A},{0x5A,0x5A,0x5A},{0xDA,0xDA,0xDA},{0x9A,0x9A,0x9A}}};
+	const char * text[11] = {"  0%", " 10%", " 20%", " 30%" , " 40%", " 50%", " 60%", " 70%", " 80%", " 90%", "100%"};
+	uint8_t length_items = 22;
+	uint8_t offset = (TBL_WIDTH - length_items) >> 1;
+	for (uint8_t i = 0; i<4; i++)
+	memset(&tblAttribute[(7 + i + 4*optionSettingSelector)*TBL_WIDTH + offset], 0x1A, length_items);
 
+	memcpy(&tblName[8*TBL_WIDTH + offset + 1], "Volume", 6);
+	memset(&tblAttribute[8*TBL_WIDTH + offset + 1], optionSettingSelector==0?0x3A:0x27, 6);
+	for (uint8_t i = 0; i<10; i++) memset(&tblName[9*TBL_WIDTH + offset + 1 + i], (i<setting.volume?0xA9:0x99), 1);	memcpy(&tblName[9*TBL_WIDTH + offset + length_items-5], text[setting.volume], 4);	
+	memset(&tblAttribute[9*TBL_WIDTH + offset + 1], optionSettingSelector==0?0x1A:0x07, 10);		memset(&tblAttribute[9*TBL_WIDTH + offset + length_items-5], optionSettingSelector==0?0x3A:0x27, 4);
+
+	memcpy(&tblName[12*TBL_WIDTH + offset + 1], "Brightness", 10);
+	memset(&tblAttribute[12*TBL_WIDTH + offset + 1], optionSettingSelector==1?0x3A:0x27, 10);
+	for (uint8_t i = 0; i<10; i++) memset(&tblName[13*TBL_WIDTH + offset + 1 + i], (i<setting.brightness?0xA9:0x99), 1); memcpy(&tblName[13*TBL_WIDTH + offset + length_items-5], text[setting.brightness], 4);	
+	memset(&tblAttribute[13*TBL_WIDTH + offset + 1], optionSettingSelector==1?0x1A:0x07, 10);		memset(&tblAttribute[13*TBL_WIDTH + offset + length_items-5], optionSettingSelector==1?0x3A:0x27, 4);
+
+	memcpy(&tblName[16*TBL_WIDTH + offset + 1], "Playing", 7);										memcpy(&tblName[16*TBL_WIDTH + offset + length_items-4], &swtch[setting.play_home_music?1:0], 3); 
+	memset(&tblAttribute[16*TBL_WIDTH + offset + 1], optionSettingSelector==2?0x3A:0x27, 7);		memcpy(&tblAttribute[16*TBL_WIDTH + offset + length_items-4], &swtch_mask[optionSettingSelector==2?1:0][setting.play_home_music?2:0], 3);
+	memcpy(&tblName[17*TBL_WIDTH + offset + 1], "home music", 10);									memcpy(&tblName[17*TBL_WIDTH + offset + length_items-4], &swtch[setting.play_home_music?1:0], 3);
+	memset(&tblAttribute[17*TBL_WIDTH + offset + 1], optionSettingSelector==2?0x3A:0x27, 10);		memcpy(&tblAttribute[17*TBL_WIDTH + offset + length_items-4], &swtch_mask[optionSettingSelector==2?1:0][setting.play_home_music?3:1], 3);
+
+	memcpy(&tblName[20*TBL_WIDTH + offset + 1], "Enable", 6);										memcpy(&tblName[20*TBL_WIDTH + offset + length_items-4], &swtch[setting.turbo_a?1:0], 3); 
+	memset(&tblAttribute[20*TBL_WIDTH + offset + 1], optionSettingSelector==3?0x3A:0x27, 6);		memcpy(&tblAttribute[20*TBL_WIDTH + offset + length_items-4], &swtch_mask[optionSettingSelector==3?1:0][setting.turbo_a?2:0], 3);
+	memcpy(&tblName[21*TBL_WIDTH + offset + 1], "TURBO A", 7);										memcpy(&tblName[21*TBL_WIDTH + offset + length_items-4], &swtch[setting.turbo_a?1:0], 3); 
+	memset(&tblAttribute[21*TBL_WIDTH + offset + 1], optionSettingSelector==3?0x3A:0x27, 7);		memcpy(&tblAttribute[21*TBL_WIDTH + offset + length_items-4], &swtch_mask[optionSettingSelector==3?1:0][setting.turbo_a?3:1], 3);
+
+	memcpy(&tblName[24*TBL_WIDTH + offset + 1], "Enable", 6);										memcpy(&tblName[24*TBL_WIDTH + offset + length_items-4], &swtch[setting.turbo_b?1:0], 3); 
+	memset(&tblAttribute[24*TBL_WIDTH + offset + 1], optionSettingSelector==4?0x3A:0x27, 6);		memcpy(&tblAttribute[24*TBL_WIDTH + offset + length_items-4], &swtch_mask[optionSettingSelector==4?1:0][setting.turbo_b?2:0], 3);
+	memcpy(&tblName[25*TBL_WIDTH + offset + 1], "TURBO B", 7);										memcpy(&tblName[25*TBL_WIDTH + offset + length_items-4], &swtch[setting.turbo_b?1:0], 3); 
+	memset(&tblAttribute[25*TBL_WIDTH + offset + 1], optionSettingSelector==4?0x3A:0x27, 7);		memcpy(&tblAttribute[25*TBL_WIDTH + offset + length_items-4], &swtch_mask[optionSettingSelector==4?1:0][setting.turbo_b?3:1], 3);
+
+	if (!counter) cursor = (++cursor)%3;
+	for (uint8_t i = 0; i<2; i++) {
+		tblName[(	  8+i  + 4*optionSettingSelector)*TBL_WIDTH + offset - 2] =  0xAD+cursor;
+		tblAttribute[(8+i  + 4*optionSettingSelector)*TBL_WIDTH + offset - 2]  = !i?0x1B:0x5B;
+	}
 }
 
 uint8_t scroll = 0;
@@ -1330,6 +1367,18 @@ printf("DEBUG: %s.\n", "Playing always sound clock");
 				currentSelect = gamelist; // exit;
 				return;
 			}
+
+            if (setting.turbo_b && controller&0x40) {
+                if (lastkbState & 0x40) lastkbState &= 0xBF;
+                else lastkbState = lastkbState |= 0x40;
+                controller = (lastkbState&0x40) | (controller & 0xBF);
+            }
+            if (setting.turbo_a && controller&0x80) {
+                if (lastkbState & 0x80) lastkbState &= 0x7F;
+                else lastkbState = lastkbState |= 0x80;
+                controller = (lastkbState&0x80) | (controller & 0x7F);
+            } 
+
 			NES.CPU.controller[0] = controller;
 			uint8_t SkeepBuffer = (int)(1789773.0/(SoundSamplesPerSec>>1)) * ((double)FPS/59.5f);
 			uint16_t totalCount = audioBufferCount;
@@ -1371,16 +1420,18 @@ printf("DEBUG: %s.\n", "Playing always sound clock");
 printf("DEBUG: %s.\n", "Playing sound clock");
 #endif
 
-	if (bgm_boot) {
-		PlayWavClock(bgm_boot);
-		if (feof(bgm_boot->file)) {
-			fclose(bgm_boot->file);
-			bgm_boot->file = NULL;
-			delete bgm_boot;
-			bgm_boot = NULL;
-			
-		}
-	} else PlayWavClock(bgm_home, true);
+	if (setting.play_home_music) {
+		if (bgm_boot) {
+			PlayWavClock(bgm_boot);
+			if (feof(bgm_boot->file)) {
+				fclose(bgm_boot->file);
+				bgm_boot->file = NULL;
+				delete bgm_boot;
+				bgm_boot = NULL;
+				
+			}
+		} else PlayWavClock(bgm_home, true);
+	}
 	PlayWavClock(se_sys_cancel);
 	PlayWavClock(se_sys_click);
 	PlayWavClock(se_sys_cursor);
@@ -1435,6 +1486,17 @@ printf("DEBUG: %s.\n", "Update controller action");
 						}
 					}
 				break;
+				case options:
+					if (!(lastkbState&0x01)) {
+						switch (optionSettingSelector) {
+							case 0: if (setting.volume < 10) {setting.volume++; PlayWav(se_sys_click);} break;
+							case 1: if (setting.brightness < 10) {setting.brightness++; PlayWav(se_sys_click);} break;
+							case 2: if (!setting.play_home_music) {setting.play_home_music = true; PlayWav(se_sys_click);} break;
+							case 3: if (!setting.turbo_a) {setting.turbo_a = true; PlayWav(se_sys_click);} break;
+							case 4: if (!setting.turbo_b) {setting.turbo_b = true; PlayWav(se_sys_click);} break;
+						}
+					}
+				break;
 			}
 		}
 /*left*/if (controller&0x02) {
@@ -1475,6 +1537,17 @@ printf("DEBUG: %s.\n", "Update controller action");
 									break;
 								}
 							}
+						}
+					}
+				break;
+				case options:
+					if (!(lastkbState&0x02)) {
+						switch (optionSettingSelector) {
+							case 0: if (setting.volume > 0) {setting.volume--; PlayWav(se_sys_click);} break;
+							case 1: if (setting.brightness > 0) {setting.brightness--; PlayWav(se_sys_click);} break;
+							case 2: if (setting.play_home_music) {setting.play_home_music = false; PlayWav(se_sys_click);} break;
+							case 3: if (setting.turbo_a) {setting.turbo_a = false; PlayWav(se_sys_click);} break;
+							case 4: if (setting.turbo_b) {setting.turbo_b = false; PlayWav(se_sys_click);} break;
 						}
 					}
 				break;
@@ -1558,7 +1631,9 @@ printf("DEBUG: %s.\n", "Update controller action");
 					}
 				}
 			switch (currentSelect) {
-				case menu:	
+				case menu:	currentSelect = gamelist;
+							PlayWav(se_sys_cancel);
+							break;
 				case saves:
 						if (temp_save_state && temp_save_state->id == courusel[sel]->id) {
 							select_save_state = -1;
@@ -1593,7 +1668,13 @@ printf("DEBUG: %s.\n", "Update controller action");
 				break;
 
 				case options:
-					PlayWav(se_sys_click);
+					switch (optionSettingSelector) {
+						case 0: setting.volume = (setting.volume+1)%11; PlayWav(se_sys_click); break;
+						case 1: setting.brightness = (setting.brightness+1)%11; PlayWav(se_sys_click); break;
+						case 2: setting.play_home_music = !setting.play_home_music; PlayWav(se_sys_click); break;
+						case 3: setting.turbo_a = !setting.turbo_a; PlayWav(se_sys_click); break;
+						case 4: setting.turbo_b = !setting.turbo_b; PlayWav(se_sys_click); break;
+					}
 				break;
 		
 				case about: break;
@@ -1621,7 +1702,7 @@ printf("DEBUG: %s.\n", "Update controller action");
 				case gamelist: currentSelect = menu;  PlayWav(se_sys_cursor); break;
 				case saves: currentSelect = gamelist; PlayWav(se_sys_cursor); break;
 				case display: displaySettingSelector = --displaySettingSelector<0?2:displaySettingSelector; PlayWav(se_sys_cursor); break;
-				case options: PlayWav(se_sys_cursor); break;
+				case options: optionSettingSelector = --optionSettingSelector<0?4:optionSettingSelector; PlayWav(se_sys_cursor); break;
 				case about: if (scroll) { scroll--; PlayWav(se_sys_cursor);} break;
 			}
 		}
@@ -1657,7 +1738,9 @@ printf("DEBUG: %s.\n", "Update controller action");
 					displaySettingSelector = ++displaySettingSelector%3;
 					PlayWav(se_sys_cursor);
 				break;
-				case options: PlayWav(se_sys_cursor); break;
+				case options: 
+					optionSettingSelector = ++optionSettingSelector%5;
+					PlayWav(se_sys_cursor); break;
 				case about: if (!scroll_end) { scroll++; PlayWav(se_sys_cursor); } break;
 			}
 		}
