@@ -47,6 +47,11 @@ class Shell {
 
 		struct Settings {
 			uint8_t disaplayScale = 1;
+			uint8_t volume = 10;
+			uint8_t brightness = 10; //Platform specific
+			bool play_home_music = true;
+			bool turbo_a = false;
+			bool turbo_b = false;
 		} setting;
 
 		struct {
@@ -186,6 +191,7 @@ class Shell {
 
 		uint8_t cursor = 0;
 		int8_t displaySettingSelector = setting.disaplayScale;
+		int8_t optionSettingSelector = 0;
 		int16_t x_offset = stable_position;
 		uint16_t max_length;
 		uint8_t  controller;
@@ -229,7 +235,7 @@ class Shell {
 		void drawManualsPanel(uint8_t counter);
 		uint8_t swapBit(uint8_t b);
 		void MixArray(int16_t * a1, int16_t * a2, uint32_t l) {
-			for (uint32_t i = 0; i<l; i++) a1[i] = a1[i]+a2[i];
+			for (uint32_t i = 0; i<l; i++) a1[i] = ((a1[i]+a2[i]) * (float)setting.volume/10);
 		}
 	public: 
 		const unsigned SoundSamplesPerSec = 44100;
