@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Exec=usr/share/games/nes/kachikachi/CLV-P-HAADJ/CLV-P-HAADJ.nes
+Name=Super Mario USA
+Icon=usr/share/games/nes/kachikachi/CLV-P-HAADJ/CLV-P-HAADJ.png
+
+[X-CLOVER Game]
+Players=1
+Simultaneous=0
+ReleaseDate=1992-09-14
+SaveCount=0
+SortRawTitle=super mario USA
+SortRawPublisher=NINTENDO
+Copyright=Super Mario USA ©1988-1992 Nintendo

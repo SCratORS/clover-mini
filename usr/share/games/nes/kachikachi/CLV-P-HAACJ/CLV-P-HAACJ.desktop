@@ -1,0 +1,13 @@
+[Desktop Entry]
+Exec=usr/share/games/nes/kachikachi/CLV-P-HAACJ/CLV-P-HAACJ.nes
+Name=Super Mario Bros. 3
+Icon=usr/share/games/nes/kachikachi/CLV-P-HAACJ/CLV-P-HAACJ.png
+
+[X-CLOVER Game]
+Players=2
+Simultaneous=0
+ReleaseDate=1988-10-23
+SaveCount=0
+SortRawTitle=super mario bros. 3
+SortRawPublisher=NINTENDO
+Copyright=Super Mario Bros. 3 ©1988 Nintendo

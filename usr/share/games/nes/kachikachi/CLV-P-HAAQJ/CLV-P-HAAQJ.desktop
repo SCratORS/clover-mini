@@ -1,0 +1,12 @@
+[Desktop Entry]
+Exec=usr/share/games/nes/kachikachi/CLV-P-HAAQJ/CLV-P-HAAQJ.nes
+Name=Metroid
+Icon=usr/share/games/nes/kachikachi/CLV-P-HAAQJ/CLV-P-HAAQJ.png
+
+[X-CLOVER Game]
+Players=1
+Simultaneous=0
+ReleaseDate=1986-08-06
+SortRawTitle=metroid
+SortRawPublisher=NINTENDO
+Copyright=Metroid ©1986 Nintendo

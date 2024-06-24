@@ -1,0 +1,12 @@
+[Desktop Entry]
+Exec=usr/share/games/nes/kachikachi/CLV-P-HAAPJ/CLV-P-HAAPJ.nes
+Name=Kirby's Adventure
+Icon=usr/share/games/nes/kachikachi/CLV-P-HAAPJ/CLV-P-HAAPJ.png
+
+[X-CLOVER Game]
+Players=1
+Simultaneous=0
+ReleaseDate=1993-03-23
+SortRawTitle=kirby's adventure
+SortRawPublisher=NINTENDO
+Copyright=Kirby's Adventure ©1993 HAL Laboratory, Inc. / Nintendo

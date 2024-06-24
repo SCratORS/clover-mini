@@ -1,0 +1,12 @@
+[Desktop Entry]
+Exec=usr/share/games/nes/kachikachi/CLV-P-HAAHJ/CLV-P-HAAHJ.nes
+Name=Excitebike
+Icon=usr/share/games/nes/kachikachi/CLV-P-HAAHJ/CLV-P-HAAHJ.png
+
+[X-CLOVER Game]
+Players=1
+Simultaneous=0
+ReleaseDate=1984-11-30
+SortRawTitle=excitebike
+SortRawPublisher=NINTENDO
+Copyright=Excitebike ©1984 Nintendo

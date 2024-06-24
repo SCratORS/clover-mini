@@ -1,0 +1,12 @@
+[Desktop Entry]
+Exec=usr/share/games/nes/kachikachi/CLV-P-HABBJ/CLV-P-HABBJ.nes
+Name=ROCKMAN 2
+Icon=usr/share/games/nes/kachikachi/CLV-P-HABBJ/CLV-P-HABBJ.png
+
+[X-CLOVER Game]
+Players=1
+Simultaneous=0
+ReleaseDate=1988-12-24
+SortRawTitle=rockman 2
+SortRawPublisher=CAPCOM
+Copyright=ROCKMAN 2 ©CAPCOM CO., LTD. 1988, 2016 ALL RIGHTS RESERVED.
