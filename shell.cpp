@@ -354,12 +354,17 @@ bool Shell::LoadData() {
 	 	uint16_t count = TBL_WIDTH / (game_count*10);
 	 	game_count *= count+1;
  	}
- 	navigate_offset = (SCREEN_SIZE - max_length_navbar) >> 1;
- 	if (courusel.size() == 0) currentSelect = empty;
+ 	if (courusel.size() == 0) {
+ 		currentSelect = empty;
+ 		#ifdef INFO
+		printf("WARNING: %s\n", "Empty game!");
+		#endif
+ 	}
  	else {
  		std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->SortRawTitle<((card*)r)->SortRawTitle;}); 
  		navigateRestructure();
  	}
+ 	navigate_offset = (SCREEN_SIZE - max_length_navbar) >> 1;
  	FILE* fp = fopen(table_sprites, "rb");
     if (!fp) return false;
     fread(&pallete[0], 0x200, 1, fp);
@@ -373,6 +378,7 @@ void Shell::drawCourusel(uint8_t y, uint8_t counter) {
 	#ifdef DEBUG 
 	printf("DEBUG: %s.\n", "drawCourusel");
 	#endif
+	if (!courusel.size()) return;
 	uint8_t h = 10;
 	uint8_t w = 10;
 	max_length = game_count * (w + 1);
@@ -423,6 +429,7 @@ void Shell::drawNavigate(uint8_t counter) {
 	#ifdef DEBUG 
 	printf("DEBUG: %s.\n", "drawNavigate");
 	#endif
+	if (!courusel.size()) return;
 	if (!(currentSelect == gamelist || currentSelect == menu || currentSelect == preparegame)) return;
 	uint16_t nav_sel = sel/*%game_count*/;
 	if (!counter) cursor = (++cursor)%3;
@@ -1614,7 +1621,7 @@ printf("DEBUG: %s.\n", "Update controller action");
 					}
 				}
 			switch (currentSelect) {
-				case menu:	currentSelect = gamelist;
+				case menu:	currentSelect = courusel.size()?gamelist:empty;
 							PlayWav(se_sys_cancel);
 							break;
 				case saves:
@@ -1639,7 +1646,8 @@ printf("DEBUG: %s.\n", "Update controller action");
 					switch (select_to_menu_position>>2) {
 						case 0: currentSelect = display; break;
 						case 1: currentSelect = options; break;
-						case 2: currentSelect = about; scroll = 0; break;
+						case 2: if(!courusel.size()) break;
+								currentSelect = about; scroll = 0; break;
 						case 3: currentSelect = manuals; break;
 					}
 					PlayWav(se_sys_click);
@@ -1692,7 +1700,7 @@ printf("DEBUG: %s.\n", "Update controller action");
 /*down*/if (controller&0x04 && !(lastkbState&0x04)) {
 			switch (currentSelect) {
 				case menu: 	
-					currentSelect = courusel.size()==0?empty:gamelist; 
+					currentSelect = courusel.size()?gamelist:empty; 
 					PlayWav(se_sys_cursor); 
 				break;
 				case gamelist:
