@@ -1,6 +1,5 @@
 /*----TO-DO list----*/
 /* Утечка памяти при выходе из эмулятора, память не доконца очищается */
-/* Сортировка списка игр */
 /* На карточке игры должна рисоваться маленькая пиктограмма если есть временное сохранение */ 
 
 #include "Shell.h"
@@ -249,6 +248,15 @@ void Shell::LoadSaves(SavePoint * savePointList[4], uint8_t id, const char* fnam
 	}	
 }
 
+void Shell::navigateRestructure() {
+	max_length_navbar = 2;
+	for (uint16_t i = 0; i < courusel.size(); i++) {
+			courusel[i]->navCard->y_pos = 172 + (20-courusel[i]->navCard->image->height);
+			courusel[i]->navCard->x_pos = max_length_navbar;
+			max_length_navbar += courusel[i]->navCard->image->width+1;
+	}
+}
+
 bool Shell::LoadData() {
 	#ifdef INFO
 	printf("INFO: %s\n", "Loading data.");
@@ -324,25 +332,21 @@ bool Shell::LoadData() {
 	 					icon.erase(pos_e, icon.length() - pos_e);
 	 				} else ext = "";
 	 				icon.append("_small"+ext);
-
-					navcard * NavCard = new navcard;
-					NavCard->image = new Image();
-					loadBitmap(icon.c_str(), NavCard->image);
-
-					NavCard->y_pos = 172 + (20-NavCard->image->height);
-					NavCard->x_pos = max_length_navbar;
-					max_length_navbar += NavCard->image->width+1;
-
+				
 					Card->id = index++;
 					Card->select = false;
 					Card->pSelect = new bool;
+					
+					Card->navCard = new navcard;
+					Card->navCard->id = Card->id;
+					Card->navCard->select = Card->pSelect;
+					Card->navCard->image = new Image();
+					loadBitmap(icon.c_str(), Card->navCard->image);
 
 					for (uint8_t i = 0; i<4; i++) Card->savePointList[i] = nullptr;
 					LoadSaves(Card->savePointList, Card->id, (Card->path + "\\gamesaves.sav").c_str());
-					NavCard->id = Card->id;
-					NavCard->select = Card->pSelect;
+
 					courusel.push_back(Card);
-					navigate.push_back(NavCard); 
 	 			}
 
 	game_count = courusel.size();
@@ -352,7 +356,10 @@ bool Shell::LoadData() {
  	}
  	navigate_offset = (SCREEN_SIZE - max_length_navbar) >> 1;
  	if (courusel.size() == 0) currentSelect = empty;
- 	//else std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->SortRawTitle<((card*)r)->SortRawTitle;});
+ 	else {
+ 		std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->SortRawTitle<((card*)r)->SortRawTitle;}); 
+ 		navigateRestructure();
+ 	}
  	FILE* fp = fopen(table_sprites, "rb");
     if (!fp) return false;
     fread(&pallete[0], 0x200, 1, fp);
@@ -420,13 +427,13 @@ void Shell::drawNavigate(uint8_t counter) {
 	uint16_t nav_sel = sel/*%game_count*/;
 	if (!counter) cursor = (++cursor)%3;
 	if (max_length_navbar > SCREEN_SIZE-4) {
-		navigate_offset = 0 - ((float)(max_length_navbar - SCREEN_SIZE + 4 ) / navigate.size()) * nav_sel;		
-		int16_t length_offset = navigate[nav_sel]->x_pos + navigate_offset + navigate[nav_sel]->image->width+1;		
+		navigate_offset = 0 - ((float)(max_length_navbar - SCREEN_SIZE + 4 ) / courusel.size()) * nav_sel;		
+		int16_t length_offset = courusel[nav_sel]->navCard->x_pos + navigate_offset + courusel[nav_sel]->navCard->image->width+1;		
 		if (length_offset > SCREEN_SIZE-2)
 		navigate_offset -= length_offset - SCREEN_SIZE  + 2;
 	}
-	current_pos_x = navigate[nav_sel]->x_pos + navigate_offset + (navigate[nav_sel]->image->width >> 1) - 8;
-	current_pos_y = navigate[nav_sel]->y_pos;
+	current_pos_x = courusel[nav_sel]->navCard->x_pos + navigate_offset + (courusel[nav_sel]->navCard->image->width >> 1) - 8;
+	current_pos_y = courusel[nav_sel]->navCard->y_pos;
 	for (uint8_t i = 0; i<2; i++) drawSprite(0x0A + cursor, current_pos_x + (i<<3), current_pos_y - 8, !i?0x82:0x02);
 }
 
@@ -1545,10 +1552,10 @@ printf("DEBUG: %s.\n", "Update controller action");
 				break;
 				case gamelist:
 					switch (sortType = (++sortType)%4) {
-						case 0: std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->SortRawTitle<((card*)r)->SortRawTitle;}); break;
-						case 1: std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->players<((card*)r)->players;}); break;
-						case 2: std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->date<((card*)r)->date;}); break;				
-						case 3: std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->SortRawPublisher<((card*)r)->SortRawPublisher;}); break;
+						case 0: std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->SortRawTitle<((card*)r)->SortRawTitle;}); navigateRestructure(); break;
+						case 1: std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->players<((card*)r)->players;}); navigateRestructure(); break;
+						case 2: std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->date<((card*)r)->date;}); navigateRestructure(); break;				
+						case 3: std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->SortRawPublisher<((card*)r)->SortRawPublisher;}); navigateRestructure(); break;
 					} 
 				break;
 			}
@@ -1864,16 +1871,16 @@ printf("DEBUG: %s.\n", "Render screen");
 		}
 
 		if (currentSelect == gamelist || currentSelect == menu || currentSelect == preparegame)
-		for (uint8_t i = 0; i < navigate.size(); i++) {
-			int16_t position_y = navigate[i]->y_pos;
-			int16_t position_x = navigate[i]->x_pos + navigate_offset;
-			if (position_x <  0 - navigate[i]->image->width || position_x > SCREEN_SIZE) continue;
-			for (int16_t y = position_y; y < position_y + navigate[i]->image->height; y++)
-			for (int16_t x = position_x; x < position_x + navigate[i]->image->width; x++) {
+		for (uint8_t i = 0; i < courusel.size(); i++) {
+			int16_t position_y = courusel[i]->navCard->y_pos;
+			int16_t position_x = courusel[i]->navCard->x_pos + navigate_offset;
+			if (position_x <  0 - courusel[i]->navCard->image->width || position_x > SCREEN_SIZE) continue;
+			for (int16_t y = position_y; y < position_y + courusel[i]->navCard->image->height; y++)
+			for (int16_t x = position_x; x < position_x + courusel[i]->navCard->image->width; x++) {
 				if (x >= SCREEN_SIZE) break;
 				if (x < 0) continue;
-				uint32_t pixel = (y - position_y) * navigate[i]->image->width + (x - position_x);
-				txt_color = (navigate[i]->image->rawData[pixel].R << 16) | (navigate[i]->image->rawData[pixel].G << 8) | navigate[i]->image->rawData[pixel].B;
+				uint32_t pixel = (y - position_y) * courusel[i]->navCard->image->width + (x - position_x);
+				txt_color = (courusel[i]->navCard->image->rawData[pixel].R << 16) | (courusel[i]->navCard->image->rawData[pixel].G << 8) | courusel[i]->navCard->image->rawData[pixel].B;
 				PutPixel(x, y, txt_color);
 			}
 		}
