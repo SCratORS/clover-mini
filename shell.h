@@ -112,26 +112,6 @@ class Shell {
 		WavFile * se_sys_cancel;
 		WavFile * se_sys_smoke;
 
-		struct BmpHeader {
-		    uint32_t sizeOfBitmapFile;
-		    uint32_t reservedBytes;
-		    uint32_t pixelDataOffset;
-		};
-
-		struct BmpInfoHeader {
-		    uint32_t sizeOfThisHeader;
-		    int32_t width;
-		    int32_t height;
-		    uint16_t numberOfColorPlanes;
-		    uint16_t colorDepth;
-		    uint32_t compressionMethod;
-		    uint32_t rawBitmapDataSize;
-		    int32_t horizontalResolution;
-		    int32_t verticalResolution;
-		    uint32_t colorTableEntries;
-		    uint32_t importantColors;
-		};
-
 		struct SavePoint {
 			uint8_t id;
 			uint16_t time_shtamp;
