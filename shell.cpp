@@ -1560,7 +1560,7 @@ printf("DEBUG: %s.\n", "Update controller action");
 				case gamelist:
 					switch (sortType = (++sortType)%4) {
 						case 0: std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->SortRawTitle<((card*)r)->SortRawTitle;}); navigateRestructure(); break;
-						case 1: std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->players<((card*)r)->players;}); navigateRestructure(); break;
+						case 1: std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->players>((card*)r)->players || ((card*)l)->simultaneous>((card*)r)->simultaneous || ((card*)l)->SortRawTitle<((card*)r)->SortRawTitle;}); navigateRestructure(); break;
 						case 2: std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->date<((card*)r)->date;}); navigateRestructure(); break;				
 						case 3: std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->SortRawPublisher<((card*)r)->SortRawPublisher;}); navigateRestructure(); break;
 					} 
