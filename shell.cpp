@@ -1,5 +1,4 @@
 /*----TO-DO list----*/
-/* Замена BMP на PNG */
 /* Утечка памяти при выходе из эмулятора, память не доконца очищается */
 /* Сортировка списка игр */
 /* На карточке игры должна рисоваться маленькая пиктограмма если есть временное сохранение */ 
@@ -10,6 +9,7 @@
 #include <iostream>
 #include <filesystem>
 #include <algorithm>
+#include "LuPng/lupng.h"
 
 /*
 uint16_t RGB888ToRGB565( uint32_t color )
@@ -64,46 +64,22 @@ Shell::Shell() {
 }
 
 void Shell::loadBitmap(const char* fname, Image * image) {
-	FILE* fb = fopen(fname, "rb");
-	if (fb) {
-		BmpHeader header;
-		BmpInfoHeader bmpInfo;
-		char sig[2];
-		fread(&sig, sizeof(sig), 1, fb);
-		if (sig[0] == 'B' && sig[1] == 'M') {
-			fread(&header, sizeof(header), 1, fb);
-			fread(&bmpInfo, sizeof(bmpInfo), 1, fb);
-			if (bmpInfo.numberOfColorPlanes == 1) {
-				if (bmpInfo.colorDepth == 24 && bmpInfo.compressionMethod == 0) {
-					image->width = bmpInfo.width;
-					image->height = bmpInfo.height;
-					uint8_t skip = bmpInfo.width%4;
-					uint32_t sizeRaw = bmpInfo.width * bmpInfo.height;
-					image->rawData.resize(sizeRaw);
-					fseek(fb , header.pixelDataOffset, SEEK_SET);
-					for (uint32_t i = 1; i <= bmpInfo.height; i++) {
-						fread(image->rawData.data() + (bmpInfo.height-i) * bmpInfo.width, sizeof(BmpPixel), bmpInfo.width, fb);
-						fseek(fb , skip, SEEK_CUR);
-					}
-					#ifdef INFO
-					printf("INFO: %s loaded.\n", fname);
-					#endif
-				} else {
-					#ifdef INFO
-					printf("ERROR: Not supported BMP File: %s\n", fname);
-					#endif
-				}
-			} else {
-				#ifdef INFO
-				printf("ERROR: Incorrect BMP File: %s\n", fname);
-				#endif
-			}
-		} else {
-			#ifdef INFO
-			printf("ERROR: Not BMP file: %s\n", fname);
-			#endif
-		}
-		fclose(fb);
+	#ifdef INFO
+	printf("INFO: Load PNG File: %s\n", fname);
+	#endif
+	LuImage *img;
+	if (img = luPngReadFile(fname)) {
+		image->width = img->width;
+		image->height = img->height;
+		uint32_t sizeRaw = img->width * img->height;
+		image->rawData.resize(sizeRaw);
+        for (int p = 0, i = 0; i < img->dataSize && p < sizeRaw; i += 3) {
+        	image->rawData[p].R = img->data[i];
+            image->rawData[p].G = img->data[i + 1];
+            image->rawData[p].B = img->data[i + 2];
+            p++;
+        }
+       luImageRelease(img, NULL);
 	} else {
 		#ifdef INFO
 		printf("ERROR: Can't open file: %s\n", fname);
