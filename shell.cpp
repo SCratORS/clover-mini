@@ -778,14 +778,14 @@ void Shell::drawDisplayContent(uint8_t counter) {
 
 	if (!counter) cursor = (++cursor)%3;
 	for (uint8_t i = 0; i<2; i++) {
-		tblName[(7+6*displaySettingSelector)*TBL_WIDTH + HALF_TBL_WIDTH + i - 1] =  0x0A+cursor;
+		tblName[(7+6*displaySettingSelector)*TBL_WIDTH + HALF_TBL_WIDTH + i - 1] =  0xBD+cursor;
 		tblAttribute[(7+6*displaySettingSelector)*TBL_WIDTH + HALF_TBL_WIDTH + i - 1]  = !i?0x9B:0x1B;
 	}
 }
 
 void Shell::drawOptionsContent(uint8_t counter) {
 	uint8_t swtch [2][3] = {{0xAA,0xAB,0xAC},{0xBC,0xBB,0xBA}};
-	uint8_t swtch_mask [2][4][3] = {{{0x1B,0x1B,0x1B},{0x5B,0x5B,0x5B},{0xCB,0xCB,0xCB},{0x8B,0x8B,0x8B}},{{0x1A,0x1A,0x1A},{0x5A,0x5A,0x5A},{0xDA,0xDA,0xDA},{0x9A,0x9A,0x9A}}};
+	uint8_t swtch_mask [2][4][3] = {{{0x1B,0x1B,0x1B},{0x5B,0x5B,0x5B},{0xDB,0xDB,0xDB},{0x9B,0x9B,0x9B}},{{0x1A,0x1A,0x1A},{0x5A,0x5A,0x5A},{0xDA,0xDA,0xDA},{0x9A,0x9A,0x9A}}};
 	const char * text[11] = {"  0%", " 10%", " 20%", " 30%" , " 40%", " 50%", " 60%", " 70%", " 80%", " 90%", "100%"};
 	uint8_t length_items = 22;
 	uint8_t offset = (TBL_WIDTH - length_items) >> 1;
@@ -1749,7 +1749,7 @@ printf("DEBUG: %s.\n", "Update controller action");
 printf("DEBUG: %s.\n", "Clear tblName");
 #endif
 
-	memset(&tblName[0], 0x20, TBL_SIZE);
+	memset(&tblName[0], 0xFF, TBL_SIZE);
 
 #ifdef DEBUG 
 printf("DEBUG: %s.\n", "Draw UI");
@@ -1787,7 +1787,7 @@ printf("DEBUG: %s.\n", "Draw UI");
 		#ifdef DEBUG 
 		printf("DEBUG: %s.\n", "other Draw");
 		#endif
-		memset(&tblAttribute[0], 0x17, TBL_SIZE);
+		memset(&tblAttribute[0], 0x05, TBL_SIZE);
 		drawTopBar();
 		drawMenu();
 		if (currentSelect == saves) {
