@@ -119,6 +119,14 @@ class Shell {
 			State * state;
 		};
 
+		struct navcard{
+			uint8_t id;
+			int16_t x_pos;
+			int16_t y_pos;
+			bool * select;
+			Image * image; 
+		};
+
 		struct card{
 			uint8_t id;
 			int16_t x_pos;
@@ -137,17 +145,10 @@ class Shell {
 			uint8_t simultaneous;
 			Image * image;
 			SavePoint * savePointList[4];
-		};
-		struct navcard{
-			uint8_t id;
-			int16_t x_pos;
-			int16_t y_pos;
-			bool * select;
-			Image * image; 
+			navcard * navCard;
 		};
 
 		std::vector<card*> courusel;
-		std::vector<navcard*> navigate;
 		
 		int8_t fadeProcents = 0;
 		int8_t courusel_direction = 0;
@@ -180,7 +181,7 @@ class Shell {
 		uint32_t avrColor(uint8_t a, uint8_t b, uint32_t c1, uint32_t c2);
 		void PutPixel(int16_t px,int16_t py, uint32_t color);
 		uint32_t GetPixel(int16_t px,int16_t py);
-		
+		void navigateRestructure();
 		bool deleteSavePoint(SavePoint * savepoint);
 		void SaveSettings();
 		void LoadSettings();
