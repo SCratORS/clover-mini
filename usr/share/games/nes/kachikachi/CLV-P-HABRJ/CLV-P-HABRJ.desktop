@@ -1,0 +1,12 @@
+[Desktop Entry]
+Exec=usr/share/games/nes/kachikachi/CLV-P-HABRJ/CLV-P-HABRJ.nes
+Name=GRADIUS
+Icon=usr/share/games/nes/kachikachi/CLV-P-HABRJ/CLV-P-HABRJ.png
+
+[X-CLOVER Game]
+Players=2
+Simultaneous=0
+ReleaseDate=1986-04-25
+SortRawTitle=gradius
+SortRawPublisher=KONAMI
+Copyright=GRADIUS ©1986 Konami Digital Entertainment

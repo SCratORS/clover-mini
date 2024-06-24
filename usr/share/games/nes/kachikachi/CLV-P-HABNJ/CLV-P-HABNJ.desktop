@@ -1,0 +1,12 @@
+[Desktop Entry]
+Exec=usr/share/games/nes/kachikachi/CLV-P-HABNJ/CLV-P-HABNJ.nes
+Name=Galaga
+Icon=usr/share/games/nes/kachikachi/CLV-P-HABNJ/CLV-P-HABNJ.png
+
+[X-CLOVER Game]
+Players=2
+Simultaneous=0
+ReleaseDate=1985-02-15
+SortRawTitle=galaga
+SortRawPublisher=BANDAI NAMCO
+Copyright=Galaga ©1981 BANDAI NAMCO Entertainment Inc.

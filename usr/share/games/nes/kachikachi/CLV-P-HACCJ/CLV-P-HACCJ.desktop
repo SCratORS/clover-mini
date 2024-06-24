@@ -1,0 +1,12 @@
+[Desktop Entry]
+Exec=usr/share/games/nes/kachikachi/CLV-P-HACCJ/CLV-P-HACCJ.nes
+Name=Solomon's Key
+Icon=usr/share/games/nes/kachikachi/CLV-P-HACCJ/CLV-P-HACCJ.png
+
+[X-CLOVER Game]
+Players=1
+Simultaneous=0
+ReleaseDate=1986-07-30
+SortRawTitle=solomon's key
+SortRawPublisher=KOEI TECMO
+Copyright=Solomon's Key ©1986 KOEI TECMO GAMES Co., Ltd. All rights reserved.

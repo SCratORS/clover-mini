@@ -1,0 +1,12 @@
+[Desktop Entry]
+Exec=usr/share/games/nes/kachikachi/CLV-P-HACPJ/CLV-P-HACPJ.nes
+Name=Atlantis no Nazo
+Icon=usr/share/games/nes/kachikachi/CLV-P-HACPJ/CLV-P-HACPJ.png
+
+[X-CLOVER Game]
+Players=1
+Simultaneous=0
+ReleaseDate=1986-04-17
+SortRawTitle=atlantis no nazo
+SortRawPublisher=SUNSOFT
+Copyright=Atlantis no Nazo ©SUNSOFT
