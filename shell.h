@@ -182,6 +182,7 @@ class Shell {
 		void PutPixel(int16_t px,int16_t py, uint32_t color);
 		uint32_t GetPixel(int16_t px,int16_t py);
 		void navigateRestructure();
+		void drawHintWindow(uint8_t counter);
 		bool deleteSavePoint(SavePoint * savepoint);
 		void SaveSettings();
 		void LoadSettings();
