@@ -16,20 +16,10 @@ HANDLE hThread;
 DWORD threadID;
 HWND hWnd;
 HDC hdc;
+HACCEL hAccel;
+HBITMAP frm_bmp[1];
+bool bmp_c = false;
 
-LRESULT CALLBACK WindowProcedure (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
-    switch (message) {
-        case WM_DESTROY:
-            CloseHandle(hThread);
-            ReleaseDC(hWnd, hdc);
-            DeleteDC(hdc);
-            PostQuitMessage(0);
-            break;
-        default:
-            return DefWindowProc(hWnd, message, wParam, lParam);
-   }
-   return 0;
-}
 namespace ENGINE {
     SDL_AudioDeviceID adid;
     SDL_AudioSpec wS;
@@ -50,36 +40,36 @@ namespace ENGINE {
         running = true;
     }
 
-    void FlushScanline() { 
+    void FlushScanline() {
         HDC src_hdc = CreateCompatibleDC(hdc);
-        HBITMAP frm_bmp = CreateBitmap(SCREEN_SIZE,240,1,32, frm_buffer);
-        SelectObject(src_hdc, frm_bmp);
+        SelectObject(src_hdc, frm_bmp[bmp_c?0:1]);
         StretchBlt(hdc, 0, 0, W, H, src_hdc, 0,0,SCREEN_SIZE,240, SRCCOPY);
         DeleteDC(src_hdc);
-        DeleteObject(frm_bmp);
     }
 
     void flip() {
-        FlushScanline();
+        DeleteObject(frm_bmp[bmp_c?1:0]); 
+        frm_bmp[bmp_c?1:0] = CreateBitmap(SCREEN_SIZE,240,1,32, frm_buffer);
+        bmp_c = !bmp_c;
     }
 }
 
 DWORD WINAPI ThreadProc(LPVOID lpParameter) {
     bool& running = *((bool*)lpParameter);
-    auto lastTime = std::chrono::steady_clock::now();
     double FPS = 0;
     double minFPS = -1;
     double aFPS = -1;
+    auto lastTime = std::chrono::steady_clock::now();
     const double maxPeriod = 1.0 / 61.0f;
     char windowFpsString[_MAX_PATH];
     while( ENGINE::running ) {
         auto time = std::chrono::steady_clock::now();
         double diff = std::chrono::duration<double> (time - lastTime).count();
         if ( diff >= maxPeriod ) {
+            lastTime = time;
             FPS  =  1.0 / diff;
             if (minFPS < 0 || minFPS > FPS) minFPS = FPS;
             if (aFPS < 0 || FPS < 60.9f) aFPS = FPS; 
-            lastTime = time;
             sprintf(windowFpsString, "Clover Mini | FPS: %.1f | minFPS:  %.1f | aFPS:  %.1f", FPS, minFPS, aFPS);
             SetWindowText(hWnd, (LPCTSTR)windowFpsString);  
             uint8_t kb = 0x00;
@@ -94,12 +84,28 @@ DWORD WINAPI ThreadProc(LPVOID lpParameter) {
             shell.setJoyState(kb);
             shell.Update(FPS);
             SDL_QueueAudio(ENGINE::adid, shell.getAudioSample(), shell.audioBufferCount*2);
-            ENGINE::flip();  
+            ENGINE::flip();
         }
     } 
     return 0;
 }
 
+LRESULT CALLBACK WindowProcedure (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+    switch (message) {
+        case WM_DESTROY:
+            CloseHandle(hThread);
+            ReleaseDC(hWnd, hdc);
+            DeleteDC(hdc);
+            PostQuitMessage(0);
+            break;
+        case WM_PAINT:
+            ENGINE::FlushScanline();
+            break;
+        default:
+            return DefWindowProc(hWnd, message, wParam, lParam);
+   }
+   return 0;
+}
 
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
@@ -121,7 +127,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
     if(!RegisterClassEx(&wcex)) { MessageBox(hWnd, "Register class error", "Error", IDI_ERROR || MB_OK); return 1; }
     //hWnd = CreateWindow(szWindowClass, szTitle, (WS_OVERLAPPEDWINDOW | WS_SYSMENU) & ~(WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME), 0, 0,  ENGINE::W + GetSystemMetrics(SM_CXFIXEDFRAME)*2,ENGINE::H + GetSystemMetrics(SM_CYCAPTION) + GetSystemMetrics(SM_CYFIXEDFRAME)*2,  NULL, NULL, hInstance, NULL);
     hWnd = CreateWindow(szWindowClass, szTitle, WS_POPUP  & ~(WS_EX_DLGMODALFRAME | WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE), CW_USEDEFAULT, 0, ENGINE::W, ENGINE::H, NULL, NULL, hInstance, NULL);
-
+    hAccel = LoadAccelerators(hInstance, MAKEINTRESOURCE(122));
     if(!hWnd) { MessageBox(hWnd, "Error create window", "Error", IDI_ERROR || MB_OK);   return 1; }
     ShowWindow(hWnd, nCmdShow);
 
@@ -140,6 +146,11 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
     }
     ENGINE::FlushScanline();
     hThread = CreateThread(NULL, 0, &ThreadProc, &ENGINE::running, 0, &threadID);
-    while(GetMessage(&msg, NULL, 0, 0) && !GetAsyncKeyState(VK_ESCAPE)) { TranslateMessage(&msg); DispatchMessage(&msg); }
+    while(GetMessage(&msg, NULL, 0, 0) && !GetAsyncKeyState(VK_ESCAPE)) { 
+        if ( !TranslateAccelerator(hWnd, hAccel, &msg) ) {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg); 
+        }
+    }
     return msg.wParam;
 }
