@@ -10,7 +10,7 @@
 #include "inih/cpp/INIReader.h"
 #include "nes/BUS.h"
 
-#define TBL_WIDTH 40  //32/40/54 (DIV 2 ONLY!)
+#define TBL_WIDTH 54  //32/40/54 (DIV 2 ONLY!)
 #define MAX_SPRITES 256
 
 const int16_t SCREEN_SIZE = TBL_WIDTH*8;
@@ -165,8 +165,8 @@ class Shell {
 		SavePoint * temp_save_state = NULL; 
 		int16_t x_offset_save_state = 0;
 		int16_t stable_position_save_state = 0;
-
-		int16_t stable_position_syspend_panel_selector = 6;
+		uint8_t select_syspend_state_offset = (TBL_WIDTH - ((SCREEN_SIZE>256?4:3)<<3)) >> 1;
+		int16_t stable_position_syspend_panel_selector = select_syspend_state_offset+2;
 		int16_t select_to_syspend_panel_selector = stable_position_syspend_panel_selector;
 		bool no_select_state = false;
 
