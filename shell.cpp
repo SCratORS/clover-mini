@@ -813,6 +813,26 @@ void Shell::drawOptionsContent(uint8_t counter) {
 		tblAttribute[(8+i  + 4*optionSettingSelector)*TBL_WIDTH + offset - 2]  = !i?0x1B:0x5B;
 	}
 }
+uint8_t HintTimer;
+void Shell::drawHintWindow(uint8_t counter) {
+	if (HintTimer == 0) return;
+	if (counter == 0) HintTimer--;
+	std::string title = "";
+	switch (sortType) {
+		case 0: title = "By title"; break;
+		case 1: title = "By 2-player games"; break;
+		case 2: title = "By release date"; break;
+		case 3: title = "By publisher"; break;
+	}
+	uint8_t offset = TBL_WIDTH - title.length() - 3;
+	memset(&tblName[5 * TBL_WIDTH + offset],  0x94, 1);memset(&tblName[5 * TBL_WIDTH + offset+ 1],  0x95, title.length());memset(&tblName[5 * TBL_WIDTH + offset + 1 + title.length()],  0x94, 1);
+	memset(&tblAttribute[5 * TBL_WIDTH + offset],  0x07, title.length()+1); 						 memset(&tblAttribute[5 * TBL_WIDTH + offset + 1 + title.length()],  0x07|0x80, 1);
+	memset(&tblName[6 * TBL_WIDTH + offset],  0xA4, 1);memcpy(&tblName[6 * TBL_WIDTH + offset + 1], title.c_str(), title.length());memset(&tblName[6 * TBL_WIDTH + offset + 1 + title.length()],  0xA4, 1);
+	memset(&tblAttribute[6 * TBL_WIDTH + offset],  0x07, 1);memset(&tblAttribute[6 * TBL_WIDTH + offset + 1],  0x27, title.length());memset(&tblAttribute[6 * TBL_WIDTH + offset + 1 + title.length()],  0x07, 1);
+	memset(&tblName[7 * TBL_WIDTH + offset],  0x94, 1);memset(&tblName[7 * TBL_WIDTH + offset + 1],  0x95, title.length());memset(&tblName[7 * TBL_WIDTH + offset + 1 + title.length()],  0x94, 1);
+	memset(&tblAttribute[7 * TBL_WIDTH + offset],  0x07|0x40, title.length()+1);	 memset(&tblAttribute[7 * TBL_WIDTH + offset + 1 + title.length()],  0x07|0xC0, 1);
+}
+
 
 uint8_t scroll = 0;
 bool scroll_end = false;
@@ -1568,7 +1588,8 @@ printf("DEBUG: %s.\n", "Update controller action");
 						 navigateRestructure(); break;
 						case 2: std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->date<((card*)r)->date;}); navigateRestructure(); break;				
 						case 3: std::sort(courusel.begin(),courusel.end(), [](auto& l, auto& r){return ((card*)l)->SortRawPublisher<((card*)r)->SortRawPublisher;}); navigateRestructure(); break;
-					} 
+					}
+					HintTimer = 2;
 				break;
 			}
 		}
@@ -1811,6 +1832,7 @@ printf("DEBUG: %s.\n", "Draw UI");
 		#endif
 		drawSelector(currentSelect);
 		drawHintBar(currentSelect);
+		drawHintWindow(counter%60);
 	}
 
 #ifdef DEBUG 
