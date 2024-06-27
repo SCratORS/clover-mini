@@ -10,7 +10,7 @@
 #include "inih/cpp/INIReader.h"
 #include "nes/BUS.h"
 
-#define TBL_WIDTH 54  //32/40/54 (DIV 2 ONLY!)
+#define TBL_WIDTH 40  //32/40/54 (DIV 2 ONLY!)
 #define MAX_SPRITES 256
 
 const int16_t SCREEN_SIZE = TBL_WIDTH*8;
