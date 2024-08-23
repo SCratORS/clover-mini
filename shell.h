@@ -42,8 +42,6 @@ class Shell {
 		CARTRIDGE * CART;
 		
 		int16_t * audiosample = new int16_t[2048];
-		int16_t * tempsample = new int16_t[2048];
-		
 
 		struct Settings {
 			uint8_t disaplayScale = 1;
@@ -101,8 +99,10 @@ class Shell {
 
 		struct WavFile {
 			uint32_t offset;
-			FILE * file;
+			int16_t * data;
 			WavHeader header;
+			uint32_t raw_length;
+			uint32_t cur_pos;
 		};
 		WavFile * bgm_boot;
 		WavFile * bgm_home;
