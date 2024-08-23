@@ -1,5 +1,6 @@
 /*----TO-DO list----*/
-/* На карточке игры должна рисоваться маленькая пиктограмма если есть временное сохранение */ 
+/* На карточке игры должна рисоваться маленькая пиктограмма если есть временное сохранение */
+/* Если есть временное сохранение, и выбрана другая игра, то в ее поин-меню отражается курсор, даже если нет сохранений */
 
 #include "Shell.h"
 #include <cstdio>
@@ -29,15 +30,21 @@ bool Shell::loadWav(WavFile * wavFile, const char* fname) {
 	#ifdef INFO
 	printf("INFO: Load WAV File: %s\n", fname);
 	#endif
-	wavFile->file = fopen(fname, "rb");
-	if (wavFile->file) {
+	FILE * file = fopen(fname, "rb");
+	if (file) {
 		wavFile->offset = sizeof(wavFile->header);
-		fread(&wavFile->header, sizeof(wavFile->header), 1, wavFile->file);
+		fread(&wavFile->header, sizeof(wavFile->header), 1, file);
 		if (wavFile->header.chunkID == 0x46464952) {
 			#ifdef INFO
 			printf("INFO: %s loaded.\n", fname);
 			#endif
-			fseek(wavFile->file , 0 , SEEK_END);
+			fseek(file, 0, SEEK_END);
+			wavFile->raw_length = ((uint32_t) ftell(file) - wavFile->offset) / 2 ;
+			wavFile->data = new int16_t[wavFile->raw_length];
+			wavFile->cur_pos = wavFile->raw_length;
+			fseek(file , wavFile->offset , SEEK_SET);
+			fread(wavFile->data, sizeof(int16_t), wavFile->raw_length, file);
+			fclose(file);
 			return true;
 		}	else {
 			#ifdef INFO
@@ -1302,14 +1309,16 @@ uint32_t Shell::GetPixel(int16_t px,int16_t py) {
 }
 
 void Shell::PlayWav(WavFile * file) {
-	if (file->file) fseek(file->file, file->offset, SEEK_SET);
+	if (file->data) file->cur_pos = 0;
 }
 
 void Shell::PlayWavClock(WavFile * file, bool loop) {
-	if (file && file->file)
-	if (!feof(file->file)) {
-		MixArray(audiosample, tempsample, fread(tempsample, sizeof(int16_t), audioBufferCount, file->file));
-		if (loop && feof(file->file)) fseek(file->file, file->offset, SEEK_SET);
+	if (file && file->data)
+	if (loop && file->cur_pos >= file->raw_length) file->cur_pos = 0;
+	if (file->cur_pos < file->raw_length) {
+		uint32_t count = file->raw_length - file->cur_pos < audioBufferCount ? (file->raw_length - file->cur_pos) : audioBufferCount;
+		MixArray(audiosample, &file->data[file->cur_pos], count);
+		file->cur_pos +=  count;
 	}
 }
 
@@ -1353,7 +1362,6 @@ printf("DEBUG: %s.\n", "Clear audio buffer");
 #endif
 
 	memset(audiosample, 0x00, 2048<<1);
-	memset(tempsample, 0x00, 2048<<1);
 	audioBufferCount = SoundSamplesPerSec/FPS + 0.5f;
 
 #ifdef DEBUG
@@ -1422,7 +1430,7 @@ printf("DEBUG: %s.\n", "Playing always sound clock");
 				NES.Clock();
 				clock_counter++;
 				if (totalCount>0 && NES.APU.getAudioReady(SkeepBuffer)) {
-					tempsample[audioBufferCount++] =  NES.APU.sample;
+					audiosample[audioBufferCount++] =  NES.APU.sample * (float)setting.volume/10;
 					totalCount--;
 				}
 			} while (!NES.PPU.frame_complete);
@@ -1430,13 +1438,12 @@ printf("DEBUG: %s.\n", "Playing always sound clock");
 			while (totalCount>0) {
 				NES.APU.clock();
 				if (NES.APU.getAudioReady(SkeepBuffer)) {
-					tempsample[audioBufferCount++] =  NES.APU.sample;
+					audiosample[audioBufferCount++] =  NES.APU.sample * (float)setting.volume/10;
 					totalCount--;
 				}
 			}
 			NES.PPU.frame_complete = false;
 			if (clock_counter < 476490) memset(FrameBuffer, 0x00, SCREEN_SIZE * 240 << 2); //Костыль, чтобы не моргал экран при загрузке
-			MixArray(audiosample, tempsample, audioBufferCount);
 		}
 		return;
 	}
@@ -1458,9 +1465,9 @@ printf("DEBUG: %s.\n", "Playing sound clock");
 	if (setting.play_home_music) {
 		if (bgm_boot) {
 			PlayWavClock(bgm_boot);
-			if (feof(bgm_boot->file)) {
-				fclose(bgm_boot->file);
-				bgm_boot->file = NULL;
+			if (bgm_boot->cur_pos >= bgm_boot->raw_length) {
+				delete bgm_boot->data;
+				bgm_boot->data = NULL;
 				delete bgm_boot;
 				bgm_boot = NULL;
 				
